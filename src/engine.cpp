@@ -270,10 +270,9 @@ bool workshop::engine::internal_event_receiver_create()
 
 irr::video::E_DRIVER_TYPE workshop::engine::convert(device_type type)
 {
-  assert(type >= 0 && type < device_num);
-
   irr::video::E_DRIVER_TYPE irr_type[] = {irr::video::EDT_NULL, irr::video::EDT_SOFTWARE, irr::video::EDT_DIRECT3D9,
                                           irr::video::EDT_OPENGL};
+  assert(sizeof(irr_type) / sizeof(irr_type[0]) == workshop::engine::device_num);
   return irr_type[type];
 }
 
