@@ -85,7 +85,7 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
   irr::scene::IAnimatedMeshSceneNode* resource = nullptr;
 
   switch (type) {
-    case workshop::object_handle::type_faerie: {
+    case workshop::object_handle::type::faerie: {
       // add an MD2 node, which uses vertex-based animation
       irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((irrlicht_path + "/media/faerie.md2").c_str());
       if (!mesh)
@@ -106,7 +106,7 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
       resource->setName(name.c_str());
     } break;
 
-    case workshop::object_handle::type_ninja: {
+    case workshop::object_handle::type::ninja: {
       // this B3D file uses skinned skeletal animation
       irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((irrlicht_path + "/media/ninja.b3d").c_str());
       if (!mesh)
@@ -120,7 +120,7 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
       resource->setName(name.c_str());
     } break;
 
-    case workshop::object_handle::type_dwarf: {
+    case workshop::object_handle::type::dwarf: {
       // this X file uses skeletal animation, but without skinning
       irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((irrlicht_path + "/media/dwarf.x").c_str());
       if (!mesh)
@@ -132,7 +132,7 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
       resource->setName(name.c_str());
     } break;
 
-    case workshop::object_handle::type_yodan: {
+    case workshop::object_handle::type::yodan: {
       // this mdl file uses skinned skeletal animation
       irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((irrlicht_path + "/media/yodan.mdl").c_str());
       if (!mesh)
@@ -144,13 +144,6 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
       resource->setAnimationSpeed(20.f);
       resource->setName(name.c_str());
     } break;
-
-    case workshop::object_handle::type_unknown:
-      // nothing to do
-      break;
-
-    default:
-      assert(0);
   }
 
   return resource;
@@ -158,12 +151,12 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
 
 }  // namespace
 
-workshop::object_handle::object_handle(engine* e, type t, const std::string* name) : type_(t), name_(name)
+workshop::object_handle::object_handle(engine* e, type t, const std::string* name)
 {
   assert(e);
   assert(name);
 
-  resource_ = init_object_handle(e->runtime(), type_, *name_, e->irrlicht_path());
+  resource_ = init_object_handle(e->runtime(), t, *name, e->irrlicht_path());
 }
 
 workshop::object_handle::object_handle(irr::scene::IAnimatedMeshSceneNode* resource) : resource_(resource)
@@ -275,10 +268,11 @@ namespace {
 
 irr::video::E_DRIVER_TYPE convert(workshop::engine::device_type type)
 {
-  irr::video::E_DRIVER_TYPE irr_type[] = {irr::video::EDT_NULL, irr::video::EDT_SOFTWARE, irr::video::EDT_DIRECT3D9,
-                                          irr::video::EDT_OPENGL};
-  assert(sizeof(irr_type) / sizeof(irr_type[0]) == workshop::engine::device_num);
-  return irr_type[type];
+  constexpr irr::video::E_DRIVER_TYPE irr_type[] = {irr::video::EDT_NULL, irr::video::EDT_SOFTWARE,
+                                                    irr::video::EDT_DIRECT3D9, irr::video::EDT_OPENGL};
+  constexpr size_t device_num = static_cast<size_t>(workshop::engine::device_type::last) + 1;
+  static_assert(std::size(irr_type) == device_num, "Device translation table out of sync!");
+  return irr_type[static_cast<int>(type)];
 }
 
 irr::IrrlichtDevice* init_device(const std::string& irrlicht_path, irr::u32 width, irr::u32 height, irr::u32 bpp,
@@ -388,16 +382,9 @@ workshop::engine::engine(const std::string& irrlicht_path, irr::u32 width, irr::
                          bool full_screen, bool stencil, bool vsync, device_type* type) :
     irrlicht_path_(irrlicht_path)
 {
-  if (type) {
-    device_type_ = *type;
-  } else {
-    device_type_ = device_type::device_software;
-  }
-
   try {
-    event_receiver_ = new event_receiver;
-    device_ =
-        init_device(irrlicht_path_, width, height, bpp, full_screen, stencil, vsync, device_type_, event_receiver_);
+    device_ = init_device(irrlicht_path_, width, height, bpp, full_screen, stencil, vsync,
+                          type ? *type : device_type::software, &event_receiver_);
     runtime_ = {device_->getVideoDriver(), device_->getSceneManager(), device_->getGUIEnvironment()};
     font_ = init_font(runtime_.guienv, irrlicht_path_);
     laser_ = init_laser(runtime_.smgr, runtime_.driver, irrlicht_path_);
@@ -407,7 +394,6 @@ workshop::engine::engine(const std::string& irrlicht_path, irr::u32 width, irr::
     delete camera_;
     if (device_)
       device_->drop();
-    delete event_receiver_;
     throw;
   }
 }
@@ -417,7 +403,6 @@ workshop::engine::~engine()
   delete camera_;
   if (device_)
     device_->drop();
-  delete event_receiver_;
 }
 
 void workshop::engine::draw_label(const std::string& label)
@@ -468,9 +453,8 @@ void workshop::engine::process_collisions()
 bool workshop::engine::run()
 {
   assert(device_);
-  assert(event_receiver_);
 
-  return device_->run() && !event_receiver_->quit_;
+  return device_->run() && !event_receiver_.quit();
 }
 
 bool workshop::engine::window_active()
