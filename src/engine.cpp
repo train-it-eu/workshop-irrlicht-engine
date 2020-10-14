@@ -276,7 +276,8 @@ irr::video::E_DRIVER_TYPE workshop::engine::convert(device_type type)
   return irr_type[type];
 }
 
-int workshop::engine::init_device(irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen, bool stencil, bool vsync)
+int workshop::engine::init_device(irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen, bool stencil,
+                                  bool vsync)
 {
   assert(device_ == nullptr);
   assert(runtime_.smgr == nullptr);
@@ -472,9 +473,10 @@ void workshop::engine::draw_label(const std::string& label)
   assert(font_);
   assert(runtime_.driver);
 
-  font_->draw(std::wstring(label.begin(), label.end()).c_str(),
-              irr::core::rect<irr::s32>(100, 10, static_cast<irr::s32>(runtime_.driver->getScreenSize().Width - 100), 60),
-              irr::video::SColor(0xff, 0xff, 0xff, 0xf0), true, true);
+  font_->draw(
+      std::wstring(label.begin(), label.end()).c_str(),
+      irr::core::rect<irr::s32>(100, 10, static_cast<irr::s32>(runtime_.driver->getScreenSize().Width - 100), 60),
+      irr::video::SColor(0xff, 0xff, 0xff, 0xf0), true, true);
 }
 
 int workshop::engine::process_collisions()
