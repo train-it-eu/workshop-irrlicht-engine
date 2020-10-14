@@ -176,7 +176,7 @@ public:
    *
    * @return Error code
    */
-  int init_device(int width, int height, int bpp, bool full_screen, bool stencil, bool vsync);
+  int init_device(irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen, bool stencil, bool vsync);
 
   /**
    * Adds custom font to the engine

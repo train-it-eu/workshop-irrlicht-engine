@@ -277,7 +277,7 @@ irr::video::E_DRIVER_TYPE workshop::engine::convert(device_type type)
   return irr_type[type];
 }
 
-int workshop::engine::init_device(int width, int height, int bpp, bool full_screen, bool stencil, bool vsync)
+int workshop::engine::init_device(irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen, bool stencil, bool vsync)
 {
   assert(device_ == nullptr);
   assert(runtime_.smgr == nullptr);
@@ -474,7 +474,7 @@ void workshop::engine::draw_label(const std::string& label)
   assert(runtime_.driver);
 
   font_->draw(std::wstring(label.begin(), label.end()).c_str(),
-              irr::core::rect<irr::s32>(100, 10, runtime_.driver->getScreenSize().Width - 100, 60),
+              irr::core::rect<irr::s32>(100, 10, static_cast<irr::s32>(runtime_.driver->getScreenSize().Width - 100), 60),
               irr::video::SColor(0xff, 0xff, 0xff, 0xf0), true, true);
 }
 
@@ -546,8 +546,8 @@ bool workshop::engine::begin_scene()
 
   runtime_.smgr->drawAll();
   runtime_.guienv->drawAll();
-  const irr::s32 top = runtime_.driver->getScreenSize().Height - 50;
-  const irr::s32 bottom = runtime_.driver->getScreenSize().Height;
+  const irr::s32 top = static_cast<irr::s32>(runtime_.driver->getScreenSize().Height - 50);
+  const irr::s32 bottom = static_cast<irr::s32>(runtime_.driver->getScreenSize().Height);
   font_->draw(L"Press 'q' to exit", irr::core::rect<irr::s32>(10, top, 200, bottom),
               irr::video::SColor(0xff, 0xff, 0xff, 0xf0), false, true);
   if (process_collisions() < 0)
