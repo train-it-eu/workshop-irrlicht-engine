@@ -26,6 +26,10 @@
 #include <iostream>
 #include <string>
 
+#ifndef _MSC_VER
+#include <cxxabi.h>
+#endif
+
 /* ********************************* S T A T I S T I C S ********************************* */
 
 workshop::counters& workshop::counters::instance()
@@ -34,10 +38,40 @@ workshop::counters& workshop::counters::instance()
   return instance;
 }
 
-workshop::counters::data& workshop::counters::add(std::string name)
+namespace {
+
+#if _MSC_VER
+
+  std::string& demangle(const std::string& name)
+  {
+    return name;
+  }
+
+#else
+
+  template<typename T>
+  struct free_deleter {
+    void operator()(T* ptr) { free(ptr); }
+  };
+
+  template<typename T>
+  using c_ptr = std::unique_ptr<T, free_deleter<T>>;
+
+  std::string demangle(const std::string& mangled)
+  {
+    int status;
+    c_ptr<char> name(abi::__cxa_demangle(mangled.c_str(), 0, 0, &status));
+    return status == 0 ? name.get() : mangled;
+  }
+
+#endif
+
+}
+
+workshop::counters::data& workshop::counters::add(const std::string& name)
 {
   data_.emplace_back();
-  names_.emplace_back(std::move(name));
+  names_.emplace_back(demangle(name));
   return data_.back();
 }
 

@@ -62,7 +62,7 @@ public:
 
   static counters& instance();
 
-  data& add(std::string name);
+  data& add(const std::string& name);
   bool validate() const;
   void print(bool detailed) const;
 
