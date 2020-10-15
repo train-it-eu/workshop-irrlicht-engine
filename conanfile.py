@@ -24,7 +24,7 @@ from conans import ConanFile, CMake
 
 class Engine3dConan(ConanFile):
     name = "irrlicht-engine"
-    version = "3.0.0"
+    version = "4.0.0"
     author = "Train IT"
     license = "MIT License"
     homepage = "https://train-it.eu"
@@ -32,7 +32,10 @@ class Engine3dConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
-    requires = "irrlicht/1.8.4@mpusz/testing"
+    requires = (
+        "irrlicht/1.8.4@mpusz/testing",
+        "observer-ptr-lite/0.4.0@nonstd-lite/stable"
+    )
     exports = ["LICENSE.md"]
     exports_sources = ["include*", "src*", "CMakeLists.txt"]
     generators = "cmake"
