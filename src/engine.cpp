@@ -49,8 +49,8 @@ irr::scene::ITriangleSelector* init_selector(workshop::engine::irr_runtime* r, i
   assert(o);
 
   irr::scene::ITriangleSelector* resource = r->smgr->createTriangleSelector(o);
-  if (!resource)
-    throw std::runtime_error("Cannot create object selector");
+  assert(resource);
+
   return resource;
 }
 
@@ -67,7 +67,6 @@ workshop::selector::selector(engine* e, object_handle* object)
 workshop::selector::~selector()
 {
   assert(resource_);
-
   resource_->drop();
 }
 
@@ -92,6 +91,7 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
       if (!mesh)
         throw std::runtime_error("Cannot open mesh '" + irrlicht_path + "/media/faerie.md2'");
       resource = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
+      assert(resource);
       resource->setScale(irr::core::vector3df(1.6f));
       resource->setMD2Animation(irr::scene::EMAT_POINT);
       resource->setAnimationSpeed(20.f);
@@ -112,6 +112,7 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
       if (!mesh)
         throw std::runtime_error("Cannot open mesh '" + irrlicht_path + "/media/ninja.b3d'");
       resource = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
+      assert(resource);
       resource->setScale(irr::core::vector3df(10));
       resource->setAnimationSpeed(8.f);
       resource->getMaterial(0).NormalizeNormals = true;
@@ -125,6 +126,7 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
       if (!mesh)
         throw std::runtime_error("Cannot open mesh '" + irrlicht_path + "/media/dwarf.x'");
       resource = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
+      assert(resource);
       resource->setAnimationSpeed(20.f);
       resource->getMaterial(0).Lighting = true;
       resource->setName(name.c_str());
@@ -136,6 +138,7 @@ irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_run
       if (!mesh)
         throw std::runtime_error("Cannot open mesh '" + irrlicht_path + "/media/yodan.mdl'");
       resource = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
+      assert(resource);
       resource->setScale(irr::core::vector3df(0.8f));
       resource->getMaterial(0).Lighting = true;
       resource->setAnimationSpeed(20.f);
@@ -165,7 +168,7 @@ workshop::object_handle::object_handle(engine* e, type t, const std::string* nam
 
 workshop::object_handle::object_handle(irr::scene::IAnimatedMeshSceneNode* resource) : resource_(resource)
 {
-  assert(resource);
+  assert(resource_);
 }
 
 void workshop::object_handle::position(float x, float y, float z)
