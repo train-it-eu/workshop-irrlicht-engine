@@ -22,6 +22,9 @@
 
 #pragma once
 
+#define gsl_CONFIG_TRANSPARENT_NOT_NULL 1
+
+#include <gsl/gsl-lite.hpp>
 #include <irrlicht-engine/utils.h>
 #include <nonstd/observer_ptr.hpp>
 #include <irrlicht.h>
@@ -53,7 +56,7 @@ public:
 
 private:
   friend object_handle;
-  droppable_res_ptr<irr::scene::ITriangleSelector> resource_;  /// Irrlicht resource
+  gsl::not_null<droppable_res_ptr<irr::scene::ITriangleSelector>> resource_;  /// Irrlicht resource
 };
 
 /**
@@ -78,17 +81,17 @@ public:
    */
   explicit object_handle(irr::scene::IAnimatedMeshSceneNode& resource) : resource_(&resource) {}
 
-  void position(float x, float y, float z);
+  void position(float x, float y, float z) { resource_->setPosition(irr::core::vector3df(x, y, z)); }
   void rotation(float x, float y, float z);
-  void selector(selector& s);
-  void highlight(bool select);
-  std::string name() const;
+  void selector(selector& s) { resource_->setTriangleSelector(s.resource_.get()); }
+  void highlight(bool select) { resource_->setMaterialFlag(irr::video::EMF_LIGHTING, !select); }
+  std::string name() const { return resource_->getName(); }
   bool operator==(const object_handle& rhs) const = default;
 
 private:
   friend engine;
   friend workshop::selector;
-  nonstd::observer_ptr<irr::scene::IAnimatedMeshSceneNode> resource_;  /// Irrlicht resource
+  gsl::not_null<nonstd::observer_ptr<irr::scene::IAnimatedMeshSceneNode>> resource_;  /// Irrlicht resource
 };
 
 // Copyable
@@ -175,16 +178,15 @@ public:
   template<typename Func>
   void run(Func f)
   {
-    while (run()) {
-      if (window_active()) {
+    while (device_->run() && !event_receiver_.quit()) {
+      if (device_->isWindowActive()) {
         begin_scene();
+        auto _ = gsl::finally([&] { end_scene(); });
 
         // run user's code
         f();
-
-        end_scene();
       } else
-        yield();
+        device_->yield();
     }
   }
 
@@ -195,21 +197,19 @@ private:
   const std::filesystem::path irrlicht_media_path_;  /// path to media directory of the Irrlicht library
   event_receiver event_receiver_;                    /// event receiver
 
-  droppable_res_ptr<irr::IrrlichtDevice> device_;  /// Irrlicht device - the most important object of the engine
-  irr_runtime runtime_;                            /// Irrlicht runtime
-  irr::gui::IGUIFont& font_;                       /// Irrlicht font resource to use
-  irr::scene::IBillboardSceneNode& laser_;         /// Irrlicht resource used for laser
+  gsl::not_null<droppable_res_ptr<irr::IrrlichtDevice>>
+    device_;                                /// Irrlicht device - the most important object of the engine
+  irr_runtime runtime_;                     /// Irrlicht runtime
+  irr::gui::IGUIFont& font_;                /// Irrlicht font resource to use
+  irr::scene::IBillboardSceneNode& laser_;  /// Irrlicht resource used for laser
 
   workshop::camera camera_;                       /// engine camera
   std::optional<object_handle> selected_object_;  /// selected object found by collision detection algorithm
 
   irr_runtime& runtime() { return runtime_; }
   void process_collisions();
-  bool run();
-  bool window_active();
   void begin_scene();
   void end_scene();
-  void yield();
 };
 
 }  // namespace workshop

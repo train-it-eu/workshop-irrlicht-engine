@@ -30,6 +30,7 @@ project(irrlicht-engine
 # dependencies
 find_package(irrlicht CONFIG REQUIRED)
 find_package(observer-ptr-lite CONFIG REQUIRED)
+find_package(gsl-lite CONFIG REQUIRED)
 
 # build definition
 add_library(irrlicht-engine STATIC
@@ -38,7 +39,11 @@ add_library(irrlicht-engine STATIC
 )
 target_compile_features(irrlicht-engine PUBLIC cxx_std_20)
 target_include_directories(irrlicht-engine PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-target_link_libraries(irrlicht-engine PUBLIC irrlicht::irrlicht nonstd::observer-ptr-lite)
+target_link_libraries(irrlicht-engine
+  PUBLIC
+  irrlicht::irrlicht
+  nonstd::observer-ptr-lite
+  gsl::gsl-lite)
 set_target_properties(irrlicht-engine PROPERTIES EXPORT_NAME engine)
 add_library(irrlicht::engine ALIAS irrlicht-engine)
 

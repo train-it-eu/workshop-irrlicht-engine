@@ -40,20 +40,8 @@ const std::wstring workshop_title = L"Modern C++ Design - Part I";
 
 /* ********************************* S E L E C T O R ********************************* */
 
-namespace {
-
-workshop::droppable_res_ptr<irr::scene::ITriangleSelector> init_selector(workshop::engine::irr_runtime& r,
-                                                                         irr::scene::IAnimatedMeshSceneNode& o)
-{
-  workshop::droppable_res_ptr<irr::scene::ITriangleSelector> resource(r.smgr.createTriangleSelector(&o));
-  assert(resource);
-  return resource;
-}
-
-}  // namespace
-
 workshop::selector::selector(engine& e, object_handle& object) :
-    resource_(init_selector(e.runtime(), *object.resource_))
+    resource_(e.runtime().smgr.createTriangleSelector(object.resource_.get()))
 {
 }
 
@@ -65,7 +53,7 @@ irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_run
                                                        workshop::object_handle::type type, const std::string& name,
                                                        const std::filesystem::path& irrlicht_media_path)
 {
-  nonstd::observer_ptr<irr::scene::IAnimatedMeshSceneNode> resource;
+  using ptr_type = gsl::not_null<nonstd::observer_ptr<irr::scene::IAnimatedMeshSceneNode>>;
   using enum workshop::object_handle::type;
   switch (type) {
     case faerie: {
@@ -73,8 +61,7 @@ irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_run
       auto path = irrlicht_media_path / "faerie.md2";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
       if (!mesh) throw std::runtime_error("Cannot open mesh '" + path.string() + "'");
-      resource.reset(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
-      assert(resource);
+      ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(1.6f));
       resource->setMD2Animation(irr::scene::EMAT_POINT);
       resource->setAnimationSpeed(20.f);
@@ -87,6 +74,7 @@ irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_run
       material.NormalizeNormals = true;
       resource->getMaterial(0) = material;
       resource->setName(name.c_str());
+      return *resource;
     } break;
 
     case ninja: {
@@ -94,13 +82,13 @@ irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_run
       const auto path = irrlicht_media_path / "ninja.b3d";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
       if (!mesh) throw std::runtime_error("Cannot open mesh '" + path.string() + "'");
-      resource.reset(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
-      assert(resource);
+      ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(10));
       resource->setAnimationSpeed(8.f);
       resource->getMaterial(0).NormalizeNormals = true;
       resource->getMaterial(0).Lighting = true;
       resource->setName(name.c_str());
+      return *resource;
     } break;
 
     case dwarf: {
@@ -108,11 +96,11 @@ irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_run
       const auto path = irrlicht_media_path / "dwarf.x";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
       if (!mesh) throw std::runtime_error("Cannot open mesh '" + path.string() + "'");
-      resource.reset(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
-      assert(resource);
+      ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setAnimationSpeed(20.f);
       resource->getMaterial(0).Lighting = true;
       resource->setName(name.c_str());
+      return *resource;
     } break;
 
     case yodan: {
@@ -120,16 +108,16 @@ irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_run
       const auto path = irrlicht_media_path / "yodan.mdl";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
       if (!mesh) throw std::runtime_error("Cannot open mesh '" + path.string() + "'");
-      resource.reset(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
-      assert(resource);
+      ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(0.8f));
       resource->getMaterial(0).Lighting = true;
       resource->setAnimationSpeed(20.f);
       resource->setName(name.c_str());
+      return *resource;
     } break;
   }
 
-  return *resource;
+  throw std::logic_error("never reaches here");
 }
 
 }  // namespace
@@ -137,42 +125,16 @@ irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_run
 workshop::object_handle::object_handle(engine& e, type t, const std::string& name) :
     resource_(&init_object_handle(e.runtime(), t, name, e.irrlicht_media_path()))
 {
-  assert(resource_);
-}
-
-void workshop::object_handle::position(float x, float y, float z)
-{
-  assert(resource_);
-
-  resource_->setPosition(irr::core::vector3df(x, y, z));
 }
 
 void workshop::object_handle::rotation(float x, float y, float z)
 {
-  assert(resource_);
   assert(-180 <= x && x <= 180);
   assert(-180 <= y && y <= 180);
   assert(-180 <= z && z <= 180);
 
   resource_->setRotation(irr::core::vector3df(x, y, z));
 }
-
-void workshop::object_handle::selector(workshop::selector& s)
-{
-  assert(resource_);
-  assert(s.resource_);
-
-  resource_->setTriangleSelector(s.resource_.get());
-}
-
-void workshop::object_handle::highlight(bool select)
-{
-  assert(resource_);
-
-  resource_->setMaterialFlag(irr::video::EMF_LIGHTING, !select);
-}
-
-std::string workshop::object_handle::name() const { return resource_->getName(); }
 
 /* ********************************* C A M E R A ********************************* */
 
@@ -225,11 +187,9 @@ irr::video::E_DRIVER_TYPE convert(workshop::engine::device_type type)
   return irr_type[static_cast<int>(type)];
 }
 
-workshop::droppable_res_ptr<irr::IrrlichtDevice> init_device(const std::filesystem::path& irrlicht_media_path,
-                                                             irr::u32 width, irr::u32 height, irr::u32 bpp,
-                                                             bool full_screen, bool stencil, bool vsync,
-                                                             workshop::engine::device_type device_type,
-                                                             workshop::engine::event_receiver& event_receiver)
+gsl::not_null<workshop::droppable_res_ptr<irr::IrrlichtDevice>> init_device(
+  const std::filesystem::path& irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen,
+  bool stencil, bool vsync, workshop::engine::device_type device_type, workshop::engine::event_receiver& event_receiver)
 {
   // create Irrlicht device - the most important object of the engine
   workshop::droppable_res_ptr<irr::IrrlichtDevice> device(
@@ -350,7 +310,7 @@ void workshop::engine::process_collisions()
 
     // check if it is a collision with one of our characters and if yes cache it for further use
     if ((selected_scene_node->getID() & id_flag_is_highlightable) == id_flag_is_highlightable) {
-      if (!selected_object_ || selected_object_->resource_ != selected_scene_node)
+      if (!selected_object_ || selected_object_->resource_.get() != selected_scene_node.get())
         selected_object_.emplace(*static_cast<irr::scene::IAnimatedMeshSceneNode*>(selected_scene_node.get()));
     } else
       selected_object_ = std::nullopt;
@@ -360,20 +320,6 @@ void workshop::engine::process_collisions()
     // hide laser to simulate infinity distance
     laser_.setVisible(false);
   }
-}
-
-bool workshop::engine::run()
-{
-  assert(device_);
-
-  return device_->run() && !event_receiver_.quit();
-}
-
-bool workshop::engine::window_active()
-{
-  assert(device_);
-
-  return device_->isWindowActive();
 }
 
 void workshop::engine::begin_scene()
@@ -392,11 +338,4 @@ void workshop::engine::begin_scene()
 void workshop::engine::end_scene()
 {
   if (!runtime_.driver.endScene()) throw std::runtime_error("end_scene() failed");
-}
-
-void workshop::engine::yield()
-{
-  assert(device_);
-
-  device_->yield();
 }
