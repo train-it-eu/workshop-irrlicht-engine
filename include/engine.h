@@ -32,9 +32,35 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <variant>
 
 namespace workshop {
 
+// named_type
+template<typename T, typename Tag>
+class named_type {
+  T value_;
+
+public:
+  using value_type = T;
+
+  named_type() = default;
+  constexpr explicit named_type(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>) : value_(value) {}
+  constexpr explicit named_type(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>) : value_(std::move(value))
+  {
+  }
+
+  constexpr operator T() const noexcept(std::is_nothrow_copy_constructible_v<T>) { return value_; }
+
+  constexpr T& value() & noexcept { return value_; }
+  constexpr const T& value() const& noexcept { return value_; }
+  constexpr T&& value() && noexcept { return std::move(value_); }
+  constexpr const T&& value() const&& noexcept { return std::move(value_); }
+
+  auto operator<=>(const named_type&) const = default;
+};
+
+// droppable_res_ptr
 struct resource_dropper {
   template<typename T>
   void operator()(T* ptr) const
@@ -43,7 +69,6 @@ struct resource_dropper {
       ptr->drop();
   }
 };
-
 template<typename T>
 using droppable_res_ptr = std::unique_ptr<T, resource_dropper>;
 
@@ -126,6 +151,21 @@ private:
   explicit camera(irr::scene::ISceneManager& smgr, irr::scene::IMeshSceneNode& level);
 };
 
+using stencil_buffer = named_type<bool, class stencil_buffer_>;
+using vertical_sync = named_type<bool, class vertical_sync_>;
+
+using window_width = named_type<irr::u32, class window_width_>;
+using window_height = named_type<irr::u32, class window_height_>;
+struct window_params {
+  window_width width;
+  window_height height;
+};
+enum class bits_per_pixel : irr::u32 { bpp_16 = 16, bpp_32 = 32 };
+struct full_screen_params {
+  window_params window;
+  bits_per_pixel bpp;
+};
+
 /**
  * @brief 3D Engine based on Irrlicht framework
  *
@@ -167,16 +207,15 @@ public:
    * Constructor
    *
    * @param irrlicht_path  Path to main directory of Irrlicht library
-   * @param width          Window/Screen width
-   * @param height         Window/Screen height
-   * @param bpp            Bits per pixel valid only in full screen mode (16 or 32)
-   * @param full_screen    Enables full screen mode
+   * @param screen_params  Window or full screen resolution and depth
    * @param stencil        Enables usage of stencil buffer for shadows
    * @param vsync          Enables vertical sync
    * @param type           Type of the device to use or default
    */
-  explicit engine(std::filesystem::path irrlicht_path, irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen,
-                  bool stencil, bool vsync, device_type type = device_type::software);
+  explicit engine(std::filesystem::path irrlicht_path,
+                  const std::variant<window_params, full_screen_params>& screen_params,
+                  stencil_buffer stencil = stencil_buffer(true), vertical_sync vsync = vertical_sync(true),
+                  device_type type = device_type::software);
 
   const std::filesystem::path& irrlicht_path() const { return irrlicht_path_; }
   workshop::camera& camera() { return camera_; }
