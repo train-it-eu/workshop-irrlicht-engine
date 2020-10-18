@@ -36,6 +36,7 @@ find_package(gsl-lite CONFIG REQUIRED)
 add_library(irrlicht-engine STATIC
   src/engine.cpp include/irrlicht-engine/engine.h
   src/utils.cpp include/irrlicht-engine/utils.h
+  include/irrlicht-engine/named_type.h
 )
 target_compile_features(irrlicht-engine PUBLIC cxx_std_20)
 target_include_directories(irrlicht-engine PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)

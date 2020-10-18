@@ -188,13 +188,28 @@ irr::video::E_DRIVER_TYPE convert(workshop::engine::device_type type)
 }
 
 gsl::not_null<workshop::droppable_res_ptr<irr::IrrlichtDevice>> init_device(
-  const std::filesystem::path& irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen,
-  bool stencil, bool vsync, workshop::engine::device_type device_type, workshop::engine::event_receiver& event_receiver)
+  const std::filesystem::path& irrlicht_media_path,
+  const std::variant<workshop::window_params, workshop::full_screen_params>& screen_params,
+  workshop::stencil_buffer stencil, workshop::vertical_sync vsync, workshop::engine::device_type device_type,
+  workshop::engine::event_receiver& event_receiver)
 {
   // create Irrlicht device - the most important object of the engine
-  workshop::droppable_res_ptr<irr::IrrlichtDevice> device(
-    irr::createDevice(convert(device_type), irr::core::dimension2d<irr::u32>(width, height), bpp, full_screen, stencil,
-                      vsync, &event_receiver));
+  workshop::droppable_res_ptr<irr::IrrlichtDevice> device;
+
+  if (std::holds_alternative<workshop::window_params>(screen_params)) {
+    const auto& params = std::get<workshop::window_params>(screen_params);
+    device.reset(irr::createDevice(convert(device_type), irr::core::dimension2d<irr::u32>(params.width, params.height),
+                                   16,     // will be ignored
+                                   false,  // windowed
+                                   stencil, vsync, &event_receiver));
+  } else {
+    const auto& params = std::get<workshop::full_screen_params>(screen_params);
+    device.reset(irr::createDevice(convert(device_type),
+                                   irr::core::dimension2d<irr::u32>(params.window.width, params.window.height),
+                                   static_cast<irr::u32>(params.bpp),
+                                   true,  // full screen
+                                   stencil, vsync, &event_receiver));
+  }
   if (!device) throw std::runtime_error("Failed to create a device");
 
   // add Quake 3 map resources to Irrlicht local file system
@@ -273,10 +288,13 @@ void add_light(irr::scene::ISceneManager& smgr)
 
 }  // namespace
 
-workshop::engine::engine(std::filesystem::path irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp,
-                         bool full_screen, bool stencil, bool vsync, device_type type /* = device_type::software */) :
+workshop::engine::engine(std::filesystem::path irrlicht_media_path,
+                         const std::variant<window_params, full_screen_params>& screen_params,
+                         stencil_buffer stencil /* = stencil_buffer(true) */,
+                         vertical_sync vsync /* = vertical_sync(true) */,
+                         device_type type /* = device_type::software */) :
     irrlicht_media_path_(std::move(irrlicht_media_path)),
-    device_(init_device(irrlicht_media_path_, width, height, bpp, full_screen, stencil, vsync, type, event_receiver_)),
+    device_(init_device(irrlicht_media_path_, screen_params, stencil, vsync, type, event_receiver_)),
     runtime_{*device_->getVideoDriver(), *device_->getSceneManager(), *device_->getGUIEnvironment()},
     font_(init_font(runtime_.guienv, irrlicht_media_path_)),
     laser_(init_laser(runtime_.smgr, runtime_.driver, irrlicht_media_path_)),
