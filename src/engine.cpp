@@ -163,8 +163,6 @@ bool workshop::object_handle::resource_set(irr::scene::IAnimatedMeshSceneNode* r
   return true;
 }
 
-bool workshop::object_handle::operator==(const object_handle& rhs) const { return resource_ == rhs.resource_; }
-
 void workshop::object_handle::position(float x, float y, float z)
 {
   assert(resource_);

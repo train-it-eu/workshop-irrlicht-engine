@@ -83,7 +83,7 @@ public:
   void selector(selector* s);
   void highlight(bool select);
   void name(std::string* name) const;
-  bool operator==(const object_handle& rhs) const;
+  bool operator==(const object_handle& rhs) const = default;
 
 private:
   friend engine;
