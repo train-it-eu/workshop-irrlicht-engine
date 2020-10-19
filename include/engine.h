@@ -28,6 +28,7 @@
 #include <gsl/gsl-lite.hpp>
 #include <nonstd/observer_ptr.hpp>
 #include <irrlicht.h>
+#include <concepts>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -37,39 +38,38 @@
 namespace workshop {
 
 // named_type
-template<typename T, typename Tag>
+template<std::movable T, typename Tag>
 class named_type {
   T value_;
 
 public:
   using value_type = T;
 
-  named_type() = default;
-  constexpr explicit named_type(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>) : value_(value) {}
+  named_type() requires std::default_initializable<T> = default;
+  constexpr explicit named_type(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>) requires std::copyable<T> : value_(value) {}
   constexpr explicit named_type(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>) : value_(std::move(value))
   {
   }
 
-  constexpr operator T() const noexcept(std::is_nothrow_copy_constructible_v<T>) { return value_; }
+  constexpr operator T() const noexcept(std::is_nothrow_copy_constructible_v<T>) requires std::copyable<T> { return value_; }
 
   constexpr T& value() & noexcept { return value_; }
   constexpr const T& value() const& noexcept { return value_; }
   constexpr T&& value() && noexcept { return std::move(value_); }
   constexpr const T&& value() const&& noexcept { return std::move(value_); }
 
-  auto operator<=>(const named_type&) const = default;
+  auto operator<=>(const named_type&) const requires std::three_way_comparable<T> = default;
 };
 
 // droppable_res_ptr
 struct resource_dropper {
-  template<typename T>
-  void operator()(T* ptr) const
+  void operator()(std::derived_from<irr::IReferenceCounted> auto* ptr) const
   {
     if (ptr)
       ptr->drop();
   }
 };
-template<typename T>
+template<std::derived_from<irr::IReferenceCounted> T>
 using droppable_res_ptr = std::unique_ptr<T, resource_dropper>;
 
 // forward declarations
@@ -129,8 +129,7 @@ private:
 };
 
 // Copyable
-static_assert(std::is_copy_constructible_v<object_handle>);
-static_assert(std::is_copy_assignable_v<object_handle>);
+static_assert(std::copyable<object_handle>);
 
 /**
  * @brief Irrlicht camera object wrapper
@@ -223,7 +222,7 @@ public:
 
   void draw_label(const std::string& label);
 
-  template<typename Func>
+  template<std::invocable Func>
   void run(Func f)
   {
     while (device_->run() && !event_receiver_.quit()) {
