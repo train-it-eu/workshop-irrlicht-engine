@@ -58,6 +58,7 @@ public:
   constexpr T&& value() && noexcept { return std::move(value_); }
   constexpr const T&& value() const&& noexcept { return std::move(value_); }
 
+  bool operator==(const named_type&) const requires std::equality_comparable<T> = default;
   auto operator<=>(const named_type&) const requires std::three_way_comparable<T> = default;
 };
 
