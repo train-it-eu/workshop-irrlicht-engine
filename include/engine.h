@@ -136,7 +136,7 @@ public:
   public:
     bool quit_;  /// variable used to exit main loop
     event_receiver() : quit_(false) {}
-    virtual bool OnEvent(const irr::SEvent& event);
+    bool OnEvent(const irr::SEvent& event) override;
   };
 
   /**
