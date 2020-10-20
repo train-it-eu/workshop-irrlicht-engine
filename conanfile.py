@@ -34,7 +34,7 @@ class Engine3dConan(ConanFile):
     default_options = {"shared": False, "fPIC": True}
     requires = (
         "irrlicht/1.8.4@mpusz/testing",
-        "observer-ptr-lite/0.4.0@nonstd-lite/stable"
+        "observer-ptr-lite/0.4.0"
     )
     exports = ["LICENSE.md"]
     exports_sources = ["include*", "src*", "CMakeLists.txt"]
