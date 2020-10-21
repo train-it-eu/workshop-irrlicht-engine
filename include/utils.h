@@ -90,6 +90,9 @@ public:
   type_counters& operator=(const type_counters&)  { ++counters_[counters::copy_assignments]; return *this; }
   type_counters& operator=(type_counters&&)       { ++counters_[counters::move_assignments]; return *this; }
   // clang-format on
+
+  // needed to allow `= default` comparison operators generation in `T`
+  bool operator<=>(const type_counters&) const = default;
 };
 
 template<class T>
