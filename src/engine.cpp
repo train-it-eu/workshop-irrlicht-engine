@@ -134,9 +134,9 @@ workshop::object_handle::object_handle(engine& e, type t, const std::string& nam
 
 void workshop::object_handle::rotation(float x, float y, float z)
 {
-  assert(-180 <= x && x <= 180);
-  assert(-180 <= y && y <= 180);
-  assert(-180 <= z && z <= 180);
+  gsl_Expects(-180 <= x && x <= 180);
+  gsl_Expects(-180 <= y && y <= 180);
+  gsl_Expects(-180 <= z && z <= 180);
 
   resource_->setRotation(irr::core::vector3df(x, y, z));
 }
