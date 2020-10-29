@@ -51,15 +51,18 @@ public:
   {
   }
 
-  constexpr operator T() const noexcept(std::is_nothrow_copy_constructible_v<T>) requires std::copyable<T> { return value_; }
+  [[nodiscard]] constexpr operator T() const noexcept(std::is_nothrow_copy_constructible_v<T>) requires std::copyable<T>
+  {
+    return value_;
+  }
 
-  constexpr T& value() & noexcept { return value_; }
-  constexpr const T& value() const& noexcept { return value_; }
-  constexpr T&& value() && noexcept { return std::move(value_); }
-  constexpr const T&& value() const&& noexcept { return std::move(value_); }
+  [[nodiscard]] constexpr T& value() & noexcept { return value_; }
+  [[nodiscard]] constexpr const T& value() const& noexcept { return value_; }
+  [[nodiscard]] constexpr T&& value() && noexcept { return std::move(value_); }
+  [[nodiscard]] constexpr const T&& value() const&& noexcept { return std::move(value_); }
 
-  bool operator==(const named_type&) const requires std::equality_comparable<T> = default;
-  auto operator<=>(const named_type&) const requires std::three_way_comparable<T> = default;
+  [[nodiscard]] bool operator==(const named_type&) const requires std::equality_comparable<T> = default;
+  [[nodiscard]] auto operator<=>(const named_type&) const requires std::three_way_comparable<T> = default;
 };
 
 // droppable_res_ptr
@@ -120,8 +123,8 @@ public:
   void rotation(float x, float y, float z);
   void selector(selector& s) { resource_->setTriangleSelector(s.resource_.get()); }
   void highlight(bool select) { resource_->setMaterialFlag(irr::video::EMF_LIGHTING, !select); }
-  std::string name() const { return resource_->getName(); }
-  bool operator==(const object_handle& rhs) const = default;
+  [[nodiscard]] std::string name() const { return resource_->getName(); }
+  [[nodiscard]] bool operator==(const object_handle& rhs) const = default;
 
 private:
   friend engine;
@@ -199,8 +202,8 @@ public:
   class event_receiver : public irr::IEventReceiver, type_counters<event_receiver> {
     bool quit_ = false;  /// variable used to exit main loop
   public:
-    virtual bool OnEvent(const irr::SEvent& event);
-    bool quit() const { return quit_; }
+    [[nodiscard]] bool OnEvent(const irr::SEvent& event) override;
+    [[nodiscard]] bool quit() const { return quit_; }
   };
 
   /**
@@ -217,9 +220,9 @@ public:
                   stencil_buffer stencil = stencil_buffer(true), vertical_sync vsync = vertical_sync(true),
                   device_type type = device_type::software);
 
-  const std::filesystem::path& irrlicht_path() const { return irrlicht_path_; }
-  workshop::camera& camera() { return camera_; }
-  const std::optional<object_handle>& selected_object() const { return selected_object_; }
+  [[nodiscard]] const std::filesystem::path& irrlicht_path() const { return irrlicht_path_; }
+  [[nodiscard]] workshop::camera& camera() { return camera_; }
+  [[nodiscard]] const std::optional<object_handle>& selected_object() const { return selected_object_; }
 
   void draw_label(const std::string& label);
 
@@ -254,7 +257,7 @@ private:
   workshop::camera camera_;                       /// engine camera
   std::optional<object_handle> selected_object_;  /// selected object found by collision detection algorithm
 
-  irr_runtime& runtime() { return runtime_; }
+  [[nodiscard]] irr_runtime& runtime() { return runtime_; }
   void process_collisions();
   void begin_scene();
   void end_scene();
