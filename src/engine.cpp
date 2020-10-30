@@ -46,7 +46,7 @@ workshop::droppable_res_ptr<irr::scene::ITriangleSelector> init_selector(worksho
                                                                          irr::scene::IAnimatedMeshSceneNode& o)
 {
   workshop::droppable_res_ptr<irr::scene::ITriangleSelector> resource(r.smgr.createTriangleSelector(&o));
-  assert(!resource);
+  assert(resource);
   return resource;
 }
 
