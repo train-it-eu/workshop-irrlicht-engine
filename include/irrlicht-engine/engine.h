@@ -39,6 +39,42 @@
 
 namespace workshop {
 
+struct invalid_path : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+struct invalid_mesh_path : public invalid_path {
+public:
+  using invalid_path::invalid_path;
+};
+
+struct invalid_texture_path : public invalid_path {
+public:
+  using invalid_path::invalid_path;
+};
+
+struct invalid_archive_path : public invalid_path {
+public:
+  using invalid_path::invalid_path;
+};
+
+struct invalid_font_path : public invalid_path {
+public:
+  using invalid_path::invalid_path;
+};
+
+struct resource_creation_error : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+struct main_loop_error : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+
 template<std::derived_from<irr::IReferenceCounted> T>
 using droppable_res_ptr = std::unique_ptr<T, decltype([](auto* ptr) { ptr->drop(); })>;
 
