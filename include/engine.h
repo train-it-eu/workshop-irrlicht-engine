@@ -37,6 +37,42 @@
 
 namespace workshop {
 
+struct invalid_path : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+struct invalid_mesh_path : public invalid_path {
+public:
+  using invalid_path::invalid_path;
+};
+
+struct invalid_texture_path : public invalid_path {
+public:
+  using invalid_path::invalid_path;
+};
+
+struct invalid_archive_path : public invalid_path {
+public:
+  using invalid_path::invalid_path;
+};
+
+struct invalid_font_path : public invalid_path {
+public:
+  using invalid_path::invalid_path;
+};
+
+struct resource_creation_error : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+struct main_loop_error : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+
 // named_type
 template<std::movable T, typename Tag>
 class named_type {

@@ -62,7 +62,7 @@ namespace {
       auto path = irrlicht_path / "media" / "faerie.md2";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
       if (!mesh)
-        throw std::runtime_error("Cannot open mesh '" + path.string() + "'");
+        throw workshop::invalid_mesh_path("Cannot open mesh '" + path.string() + "'");
       ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(1.6f));
       resource->setMD2Animation(irr::scene::EMAT_POINT);
@@ -70,7 +70,7 @@ namespace {
       path = irrlicht_path / "media" / "faerie2.bmp";
       nonstd::observer_ptr<irr::video::ITexture> tex(r.driver.getTexture(path.c_str()));
       if (!tex)
-        throw std::runtime_error("Cannot open texture '" + path.string() + "'");
+        throw workshop::invalid_texture_path("Cannot open texture '" + path.string() + "'");
       irr::video::SMaterial material;
       material.setTexture(0, tex.get());
       material.Lighting = true;
@@ -85,7 +85,7 @@ namespace {
       const auto path = irrlicht_path / "media" / "ninja.b3d";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
       if (!mesh)
-        throw std::runtime_error("Cannot open mesh '" + path.string() + "'");
+        throw workshop::invalid_mesh_path("Cannot open mesh '" + path.string() + "'");
       ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(10));
       resource->setAnimationSpeed(8.f);
@@ -100,7 +100,7 @@ namespace {
       const auto path = irrlicht_path / "media" / "dwarf.x";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
       if (!mesh)
-        throw std::runtime_error("Cannot open mesh '" + path.string() + "'");
+        throw workshop::invalid_mesh_path("Cannot open mesh '" + path.string() + "'");
       ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setAnimationSpeed(20.f);
       resource->getMaterial(0).Lighting = true;
@@ -113,7 +113,7 @@ namespace {
       const auto path = irrlicht_path / "media" / "yodan.mdl";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
       if (!mesh)
-        throw std::runtime_error("Cannot open mesh '" + path.string() + "'");
+        throw workshop::invalid_mesh_path("Cannot open mesh '" + path.string() + "'");
       ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(0.8f));
       resource->getMaterial(0).Lighting = true;
@@ -151,13 +151,13 @@ irr::scene::ICameraSceneNode& init_camera(irr::scene::ISceneManager& smgr, irr::
   nonstd::observer_ptr<irr::scene::ICameraSceneNode> resource(
       smgr.addCameraSceneNodeFPS(0, 50.0f, .3f, id_flag_not_pickable, 0, 0, true, 2.f));
   if (!resource)
-    throw std::runtime_error("Cannot add camera scene node");
+    throw workshop::resource_creation_error("Cannot add camera scene node");
 
   workshop::droppable_res_ptr<irr::scene::ISceneNodeAnimator> anim(smgr.createCollisionResponseAnimator(
       level.getTriangleSelector(), resource.get(), irr::core::vector3df(30, 50, 30), irr::core::vector3df(0, -10, 0),
       irr::core::vector3df(0, 30, 0)));
   if (!anim)
-    throw std::runtime_error("Cannot create scene node animator for doing automatic collision detection and response");
+    throw workshop::resource_creation_error("Cannot create scene node animator for doing automatic collision detection and response");
 
   resource->addAnimator(anim.get());
 
@@ -219,12 +219,12 @@ namespace {
                                    stencil, vsync, &event_receiver));
   }
   if (!device)
-    throw std::runtime_error("Failed to create a device");
+    throw workshop::resource_creation_error("Failed to create a device");
 
   // add Quake 3 map resources to Irrlicht local file system
   const auto path = irrlicht_path / "media" / "map-20kdm2.pk3";
   if (!device->getFileSystem()->addFileArchive(path.c_str()))
-    throw std::runtime_error("Cannot load archive '" + path.string() + "'");
+    throw workshop::invalid_archive_path("Cannot load archive '" + path.string() + "'");
 
   device->setWindowCaption(workshop_title.c_str());
 
@@ -240,7 +240,7 @@ namespace {
   const auto path = irrlicht_path / "media" / "fonthaettenschweiler.bmp";
   nonstd::observer_ptr<irr::gui::IGUIFont> font(guienv.getFont(path.c_str()));
   if (!font)
-    throw std::runtime_error("Cannot load font '" + path.string() + "'");
+    throw workshop::invalid_font_path("Cannot load font '" + path.string() + "'");
   return *font;
 }
 
@@ -251,12 +251,12 @@ namespace {
   // add the laser
   nonstd::observer_ptr<irr::scene::IBillboardSceneNode> laser(smgr.addBillboardSceneNode());
   if (!laser)
-    throw std::runtime_error("Cannot create a laser node");
+    throw workshop::resource_creation_error("Cannot create a laser node");
 
   const auto path = irrlicht_path / "media" / "particle.bmp";
   nonstd::observer_ptr<irr::video::ITexture> laser_tex(driver.getTexture(path.c_str()));
   if (!laser_tex)
-    throw std::runtime_error("Cannot open texture '" + path.string() + "'");
+    throw workshop::invalid_texture_path("Cannot open texture '" + path.string() + "'");
 
   // init laser
   laser->setMaterialType(irr::video::EMT_TRANSPARENT_ADD_COLOR);
@@ -274,20 +274,20 @@ namespace {
   // get mesh
   nonstd::observer_ptr<irr::scene::IAnimatedMesh> q3_level_mesh(smgr.getMesh("20kdm2.bsp"));
   if (!q3_level_mesh)
-    throw std::runtime_error("Cannot open mesh '20kdm2.bsp'");
+    throw workshop::invalid_mesh_path("Cannot open mesh '20kdm2.bsp'");
 
   // add node resource
   nonstd::observer_ptr<irr::scene::IMeshSceneNode> q3_node(
       smgr.addOctreeSceneNode(q3_level_mesh->getMesh(0), nullptr, id_flag_is_pickable));
   if (!q3_node)
-    throw std::runtime_error("Cannot add scene node");
+    throw workshop::resource_creation_error("Cannot add scene node");
   q3_node->setPosition(irr::core::vector3df(-1350, -130, -1400));
 
   // assign triangle selector
   workshop::droppable_res_ptr<irr::scene::ITriangleSelector> selector(
       smgr.createOctreeTriangleSelector(q3_node->getMesh(), q3_node.get(), 128));
   if (!selector)
-    throw std::runtime_error("Cannot create octree selector");
+    throw workshop::resource_creation_error("Cannot create octree selector");
   q3_node->setTriangleSelector(selector.get());
 
   return *q3_node;
@@ -299,7 +299,7 @@ void add_light(irr::scene::ISceneManager& smgr)
   nonstd::observer_ptr<irr::scene::ILightSceneNode> light(smgr.addLightSceneNode(
       0, irr::core::vector3df(-60, 100, 400), irr::video::SColorf(1.0f, 1.0f, 1.0f, 1.0f), 600.0f));
   if (!light)
-    throw std::runtime_error("Cannot add dynamic light scene node");
+    throw workshop::resource_creation_error("Cannot add dynamic light scene node");
 
   light->setID(id_flag_not_pickable);  // make it an invalid target for selection.
 }
@@ -361,7 +361,7 @@ void workshop::engine::process_collisions()
 void workshop::engine::begin_scene()
 {
   if (!runtime_.driver.beginScene())
-    throw std::runtime_error("begin_scene() failed");
+    throw main_loop_error("begin_scene() failed");
 
   runtime_.smgr.drawAll();
   runtime_.guienv.drawAll();
@@ -375,5 +375,5 @@ void workshop::engine::begin_scene()
 void workshop::engine::end_scene()
 {
   if (!runtime_.driver.endScene())
-    throw std::runtime_error("end_scene() failed");
+    throw main_loop_error("end_scene() failed");
 }
