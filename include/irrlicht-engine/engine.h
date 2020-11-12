@@ -28,6 +28,7 @@
 #include <irrlicht-engine/named_type.h>
 #include <irrlicht-engine/ranged_value.h>
 #include <irrlicht-engine/utils.h>
+#include <nonstd/expected.hpp>
 #include <nonstd/observer_ptr.hpp>
 #include <irrlicht.h>
 #include <concepts>
@@ -130,10 +131,8 @@ class object_handle : type_counters<object_handle> {
 public:
   enum class type { faerie, ninja, dwarf, yodan };
 
-  /**
-   * Adds new character to workshop::engine
-   */
-  explicit object_handle(engine& e, type t, const std::string& name);
+  [[nodiscard]] static nonstd::expected<object_handle, std::error_code> create(engine& e, type t,
+                                                                               const std::string& name) noexcept;
 
   /**
    * Creates a reference to already existing Irrlicht node

@@ -30,6 +30,7 @@ project(irrlicht-engine
 # dependencies
 find_package(irrlicht CONFIG REQUIRED)
 find_package(observer-ptr-lite CONFIG REQUIRED)
+find_package(expected-lite CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
 
 # build definition
@@ -46,6 +47,7 @@ target_link_libraries(irrlicht-engine
   PUBLIC
   irrlicht::irrlicht
   nonstd::observer-ptr-lite
+  nonstd::expected-lite
   gsl::gsl-lite)
 set_target_properties(irrlicht-engine PROPERTIES EXPORT_NAME engine)
 add_library(irrlicht::engine ALIAS irrlicht-engine)

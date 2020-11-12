@@ -26,6 +26,7 @@
  */
 
 #include <irrlicht-engine/engine.h>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
@@ -123,85 +124,92 @@ workshop::selector::selector(engine& e, object_handle& object) :
 
 /* ********************************* O B J E C T ********************************* */
 
-namespace {
-
-[[nodiscard]] irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_runtime& r,
-                                                                     workshop::object_handle::type type,
-                                                                     const std::string& name,
-                                                                     const std::filesystem::path& irrlicht_media_path)
+nonstd::expected<workshop::object_handle, std::error_code> workshop::object_handle::create(
+  engine& e, type t, const std::string& name) noexcept
 {
+  workshop::engine::irr_runtime& r = e.runtime();
+  const std::filesystem::path& irrlicht_media_path = e.irrlicht_media_path();
   using ptr_type = gsl::not_null<nonstd::observer_ptr<irr::scene::IAnimatedMeshSceneNode>>;
-  using enum workshop::object_handle::type;
-  switch (type) {
-    case faerie: {
+
+  switch (t) {
+    case type::faerie: {
       // add an MD2 node, which uses vertex-based animation
       auto path = irrlicht_media_path / "faerie.md2";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
-      if (!mesh) throw workshop::invalid_mesh_path("Cannot open mesh '" + path.string() + "'");
+      if (!mesh) {
+        std::cerr << "ERROR: Cannot open mesh '" << path.string() << "'\n";
+        return nonstd::unexpected(std::error_code(error::invalid_mesh_path));
+      }
       ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(1.6f));
       resource->setMD2Animation(irr::scene::EMAT_POINT);
       resource->setAnimationSpeed(20.f);
       path = irrlicht_media_path / "faerie2.bmp";
       nonstd::observer_ptr<irr::video::ITexture> tex(r.driver.getTexture(path.c_str()));
-      if (!tex) throw workshop::invalid_texture_path("Cannot open texture '" + path.string() + "'");
+      if (!tex) {
+        std::cerr << "ERROR: Cannot open texture '" << path.string() << "'\n";
+        return nonstd::unexpected(std::error_code(error::invalid_texture_path));
+      }
       irr::video::SMaterial material;
       material.setTexture(0, tex.get());
       material.Lighting = true;
       material.NormalizeNormals = true;
       resource->getMaterial(0) = material;
       resource->setName(name.c_str());
-      return *resource;
-    } break;
+      return workshop::object_handle(*resource);
+    }
 
-    case ninja: {
+    case type::ninja: {
       // this B3D file uses skinned skeletal animation
       const auto path = irrlicht_media_path / "ninja.b3d";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
-      if (!mesh) throw workshop::invalid_mesh_path("Cannot open mesh '" + path.string() + "'");
+      if (!mesh) {
+        std::cerr << "ERROR: Cannot open mesh '" << path.string() << "'\n";
+        return nonstd::unexpected(std::error_code(error::invalid_mesh_path));
+      }
       ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(10));
       resource->setAnimationSpeed(8.f);
       resource->getMaterial(0).NormalizeNormals = true;
       resource->getMaterial(0).Lighting = true;
       resource->setName(name.c_str());
-      return *resource;
-    } break;
+      return workshop::object_handle(*resource);
+    }
 
-    case dwarf: {
+    case type::dwarf: {
       // this X file uses skeletal animation, but without skinning
       const auto path = irrlicht_media_path / "dwarf.x";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
-      if (!mesh) throw workshop::invalid_mesh_path("Cannot open mesh '" + path.string() + "'");
+      if (!mesh) {
+        std::cerr << "ERROR: Cannot open mesh '" << path.string() << "'\n";
+        return nonstd::unexpected(std::error_code(error::invalid_mesh_path));
+      }
       ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setAnimationSpeed(20.f);
       resource->getMaterial(0).Lighting = true;
       resource->setName(name.c_str());
-      return *resource;
-    } break;
+      return workshop::object_handle(*resource);
+    }
 
-    case yodan: {
+    case type::yodan: {
       // this mdl file uses skinned skeletal animation
       const auto path = irrlicht_media_path / "yodan.mdl";
       nonstd::observer_ptr<irr::scene::IAnimatedMesh> mesh(r.smgr.getMesh(path.c_str()));
-      if (!mesh) throw workshop::invalid_mesh_path("Cannot open mesh '" + path.string() + "'");
+      if (!mesh) {
+        std::cerr << "ERROR: Cannot open mesh '" << path.string() << "'\n";
+        return nonstd::unexpected(std::error_code(error::invalid_mesh_path));
+      }
       ptr_type resource(r.smgr.addAnimatedMeshSceneNode(mesh.get(), 0, id_flag_is_pickable | id_flag_is_highlightable));
       resource->setScale(irr::core::vector3df(0.8f));
       resource->getMaterial(0).Lighting = true;
       resource->setAnimationSpeed(20.f);
       resource->setName(name.c_str());
-      return *resource;
-    } break;
+      return workshop::object_handle(*resource);
+    }
   }
 
-  throw std::logic_error("never reaches here");
-}
-
-}  // namespace
-
-workshop::object_handle::object_handle(engine& e, type t, const std::string& name) :
-    resource_(&init_object_handle(e.runtime(), t, name, e.irrlicht_media_path()))
-{
+  // will never happen
+  std::terminate();
 }
 
 /* ********************************* C A M E R A ********************************* */
