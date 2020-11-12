@@ -32,10 +32,30 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <system_error>
 #include <type_traits>
 #include <variant>
 
 namespace workshop {
+
+enum class error {
+  invalid_mesh_path = 1,
+  invalid_texture_path,
+  invalid_archive_path,
+  invalid_font_path,
+  resource_creation_error,
+  main_loop_error
+};
+
+std::error_code make_error_code(error e);
+
+enum class error_condition {
+  invalid_path = 1,
+  resource_creation_error,
+  main_loop_error
+};
+
+std::error_condition make_error_condition(error_condition e);
 
 struct invalid_path : public std::runtime_error {
 public:
@@ -300,3 +320,9 @@ private:
 };
 
 }  // namespace workshop
+
+template<>
+struct std::is_error_code_enum<workshop::error> : std::true_type {};
+
+template<>
+struct std::is_error_condition_enum<workshop::error_condition> : std::true_type {};

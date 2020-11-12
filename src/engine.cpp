@@ -36,7 +36,69 @@ enum { id_flag_not_pickable = 0, id_flag_is_pickable = 1 << 0, id_flag_is_highli
 
 const std::wstring workshop_title = L"Modern C++ Design - Part I";
 
+class error_code_category_impl : public std::error_category {
+public:
+  const char* name() const noexcept override { return "irrlicht error code"; }
+  std::string message(int code) const override
+  {
+    using workshop::error;
+    switch (static_cast<error>(code)) {
+      case error::invalid_mesh_path: return "invalid mesh path";
+      case error::invalid_texture_path: return "invalid texture path";
+      case error::invalid_archive_path: return "invalid archive path";
+      case error::invalid_font_path: return "invalid font path";
+      case error::resource_creation_error: return "resource creation error";
+      case error::main_loop_error: return "main loop error";
+    }
+    return "Unknown error";
+  }
+  std::error_condition default_error_condition(int code) const noexcept override
+  {
+    using workshop::error, workshop::error_condition;
+    switch (static_cast<error>(code)) {
+      case error::invalid_mesh_path:
+      case error::invalid_texture_path:
+      case error::invalid_archive_path:
+      case error::invalid_font_path:
+        return std::error_condition(error_condition::invalid_path);
+      case error::resource_creation_error:
+        return std::error_condition(error_condition::resource_creation_error);
+      case error::main_loop_error:
+        return std::error_condition(error_condition::main_loop_error);
+    }
+    abort();
+  }
+};
+
+class error_condition_category_impl : public std::error_category {
+public:
+  const char* name() const noexcept override { return "irrlicht error condition"; }
+  std::string message(int condition) const override
+  {
+    using workshop::error_condition;
+    switch (static_cast<error_condition>(condition)) {
+      case error_condition::invalid_path: return "invalid path";
+      case error_condition::resource_creation_error: return "resource creation error";
+      case error_condition::main_loop_error: return "main loop error";
+    }
+    return "Unknown error";
+  }
+};
+
 }  // namespace
+
+std::error_code workshop::make_error_code(workshop::error e)
+{
+  static error_code_category_impl instance;
+  return std::error_code(static_cast<int>(e), instance);
+}
+
+std::error_condition workshop::make_error_condition(workshop::error_condition e)
+{
+  static error_condition_category_impl instance;
+  return std::error_condition(static_cast<int>(e), instance);
+}
+
 
 /* ********************************* S E L E C T O R ********************************* */
 

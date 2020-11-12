@@ -24,7 +24,7 @@ from conans import ConanFile, CMake
 
 class Engine3dConan(ConanFile):
     name = "irrlicht-engine"
-    version = "10.0.0"
+    version = "11.0.0"
     author = "Train IT"
     license = "MIT License"
     homepage = "https://train-it.eu"
