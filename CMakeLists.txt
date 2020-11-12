@@ -40,4 +40,5 @@ target_link_libraries(engine
     CONAN_PKG::irrlicht
     CONAN_PKG::observer-ptr-lite
     CONAN_PKG::gsl-lite
+    CONAN_PKG::expected-lite
 )

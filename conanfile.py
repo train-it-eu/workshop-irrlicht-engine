@@ -24,7 +24,7 @@ from conans import ConanFile, CMake
 
 class Engine3dConan(ConanFile):
     name = "irrlicht-engine"
-    version = "11.0.0"
+    version = "12.0.0"
     author = "Train IT"
     license = "MIT License"
     homepage = "https://train-it.eu"
@@ -35,7 +35,8 @@ class Engine3dConan(ConanFile):
     requires = (
         "irrlicht/1.8.4@mpusz/testing",
         "observer-ptr-lite/0.4.0",
-        "gsl-lite/0.37.0"
+        "gsl-lite/0.37.0",
+        "expected-lite/0.4.0"
     )
     exports = ["LICENSE.md"]
     exports_sources = ["include*", "src*", "CMakeLists.txt"]
