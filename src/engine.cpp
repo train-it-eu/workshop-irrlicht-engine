@@ -35,7 +35,84 @@ enum { id_flag_not_pickable = 0, id_flag_is_pickable = 1 << 0, id_flag_is_highli
 
 const std::wstring workshop_title = L"Modern C++ Design - Part I";
 
+class error_code_category_impl : public std::error_category {
+public:
+  const char* name() const noexcept override { return "irrlicht error code"; }
+
+  std::string message(int code) const override
+  {
+    using workshop::error;
+    switch (static_cast<error>(code)) {
+      case error::invalid_mesh_path:
+        return "invalid mesh path";
+      case error::invalid_texture_path:
+        return "invalid texture path";
+      case error::invalid_archive_path:
+        return "invalid archive path";
+      case error::invalid_font_path:
+        return "invalid font path";
+      case error::resource_creation_error:
+        return "resource creation error";
+      case error::begin_scene_error:
+        return "begin scene error";
+      case error::end_scene_error:
+        return "end scene error";
+    }
+    return "Unknown error";
+  }
+
+  std::error_condition default_error_condition(int code) const noexcept override
+  {
+    using workshop::error, workshop::error_condition;
+    switch (static_cast<error>(code)) {
+      case error::invalid_mesh_path:
+      case error::invalid_texture_path:
+      case error::invalid_archive_path:
+      case error::invalid_font_path:
+        return std::error_condition(error_condition::invalid_path);
+      case error::resource_creation_error:
+        return std::error_condition(error_condition::resource_creation_error);
+      case error::begin_scene_error:
+      case error::end_scene_error:
+        return std::error_condition(error_condition::main_loop_error);
+    }
+    abort();
+  }
+};
+
+class error_condition_category_impl : public std::error_category {
+public:
+  const char* name() const noexcept override { return "irrlicht error condition"; }
+
+  std::string message(int condition) const override
+  {
+    using workshop::error_condition;
+    switch (static_cast<error_condition>(condition)) {
+      case error_condition::invalid_path:
+        return "invalid path";
+      case error_condition::resource_creation_error:
+        return "resource creation error";
+      case error_condition::main_loop_error:
+        return "main loop error";
+    }
+    return "Unknown error";
+  }
+};
+
 }  // namespace
+
+std::error_code workshop::make_error_code(workshop::error e)
+{
+  static error_code_category_impl instance;
+  return std::error_code(static_cast<int>(e), instance);
+}
+
+std::error_condition workshop::make_error_condition(workshop::error_condition e)
+{
+  static error_condition_category_impl instance;
+  return std::error_condition(static_cast<int>(e), instance);
+}
+
 
 /* ********************************* S E L E C T O R ********************************* */
 
@@ -334,9 +411,12 @@ void workshop::engine::process_collisions()
   }
 }
 
-void workshop::engine::begin_scene()
+void workshop::engine::begin_scene(std::error_code& ec) noexcept
 {
-  if (!runtime_.driver.beginScene()) throw main_loop_error("begin_scene() failed");
+  if (!runtime_.driver.beginScene()) {
+    ec = error::begin_scene_error;
+    return;
+  }
 
   runtime_.smgr.drawAll();
   runtime_.guienv.drawAll();
@@ -345,9 +425,28 @@ void workshop::engine::begin_scene()
   font_.draw(L"Press 'q' to exit", irr::core::rect<irr::s32>(10, top, 200, bottom),
              irr::video::SColor(0xff, 0xff, 0xff, 0xf0), false, true);
   process_collisions();
+
+  ec.clear();
+}
+
+void workshop::engine::begin_scene()
+{
+  std::error_code ec;
+  begin_scene(ec);
+  if (ec) throw std::system_error(ec);
+}
+
+void workshop::engine::end_scene(std::error_code& ec) noexcept
+{
+  if (!runtime_.driver.endScene())
+    ec = error::end_scene_error;
+  else
+    ec.clear();
 }
 
 void workshop::engine::end_scene()
 {
-  if (!runtime_.driver.endScene()) throw main_loop_error("end_scene() failed");
+  std::error_code ec;
+  end_scene(ec);
+  if (ec) throw std::system_error(ec);
 }

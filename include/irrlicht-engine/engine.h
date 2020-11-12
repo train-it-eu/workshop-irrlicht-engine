@@ -34,10 +34,27 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <system_error>
 #include <type_traits>
 #include <variant>
 
 namespace workshop {
+
+enum class error {
+  invalid_mesh_path = 1,
+  invalid_texture_path,
+  invalid_archive_path,
+  invalid_font_path,
+  resource_creation_error,
+  begin_scene_error,
+  end_scene_error
+};
+
+std::error_code make_error_code(error e);
+
+enum class error_condition { invalid_path = 1, resource_creation_error, main_loop_error };
+
+std::error_condition make_error_condition(error_condition e);
 
 struct invalid_path : public std::runtime_error {
 public:
@@ -246,6 +263,26 @@ public:
     }
   }
 
+  template<std::invocable<std::error_code&> Func>
+  void run(Func f, std::error_code& ec) noexcept
+  {
+    ec.clear();
+    while (device_->run() && !event_receiver_.quit()) {
+      if (device_->isWindowActive()) {
+        begin_scene(ec);
+        if (ec) return;
+        auto _ = gsl::finally([&] { end_scene(ec); });
+
+        // run user code
+        f(ec);
+        if (ec) return;
+
+      } else
+        device_->yield();
+      if (ec) return;
+    }
+  }
+
 private:
   friend object_handle;
   friend selector;
@@ -264,8 +301,16 @@ private:
 
   [[nodiscard]] irr_runtime& runtime() { return runtime_; }
   void process_collisions();
+  void begin_scene(std::error_code& ec) noexcept;
   void begin_scene();
+  void end_scene(std::error_code& ec) noexcept;
   void end_scene();
 };
 
 }  // namespace workshop
+
+template<>
+struct std::is_error_code_enum<workshop::error> : std::true_type {};
+
+template<>
+struct std::is_error_condition_enum<workshop::error_condition> : std::true_type {};
