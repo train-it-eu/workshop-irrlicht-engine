@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "utils.h"
+#include <irrlicht-engine/utils.h>
 #include <cassert>
 #include <iomanip>
 #include <iostream>
@@ -28,6 +28,7 @@
 
 #ifndef _MSC_VER
 #include <cxxabi.h>
+#include <memory>
 #endif
 
 /* ********************************* S T A T I S T I C S ********************************* */
@@ -42,31 +43,28 @@ namespace {
 
 #if _MSC_VER
 
-  std::string& demangle(const std::string& name)
-  {
-    return name;
-  }
+std::string& demangle(const std::string& name) { return name; }
 
 #else
 
-  template<typename T>
-  struct free_deleter {
-    void operator()(T* ptr) { free(ptr); }
-  };
+template<typename T>
+struct free_deleter {
+  void operator()(T* ptr) { free(ptr); }
+};
 
-  template<typename T>
-  using c_ptr = std::unique_ptr<T, free_deleter<T>>;
+template<typename T>
+using c_ptr = std::unique_ptr<T, free_deleter<T>>;
 
-  std::string demangle(const std::string& mangled)
-  {
-    int status;
-    c_ptr<char> name(abi::__cxa_demangle(mangled.c_str(), 0, 0, &status));
-    return status == 0 ? name.get() : mangled;
-  }
+std::string demangle(const std::string& mangled)
+{
+  int status;
+  c_ptr<char> name(abi::__cxa_demangle(mangled.c_str(), 0, 0, &status));
+  return status == 0 ? name.get() : mangled;
+}
 
 #endif
 
-}
+}  // namespace
 
 workshop::counters::data& workshop::counters::add(const std::string& name)
 {
@@ -86,7 +84,7 @@ bool workshop::counters::validate() const
   for (size_t i = 0; i < data_.size(); ++i) {
     const auto& stats = data_[i];
     const auto balance =
-        stats[constructions] + stats[copy_constructions] + stats[move_constructions] - stats[destructions];
+      stats[constructions] + stats[copy_constructions] + stats[move_constructions] - stats[destructions];
     problemFound |= (balance != 0);
     if (balance > 0)
       std::cerr << "!!! ERROR !!! " << balance << " memory leaks found in " << names_[i] << ".\n";
@@ -94,8 +92,7 @@ bool workshop::counters::validate() const
       std::cerr << "!!! ERROR !!! " << balance << " multiple frees found in " << names_[i] << ".\n";
   }
 
-  if (!problemFound)
-    std::cout << "!NICE WORK! No memory management problems found.\n";
+  if (!problemFound) std::cout << "!NICE WORK! No memory management problems found.\n";
 
   return !problemFound;
 }
@@ -115,11 +112,9 @@ void workshop::counters::print(bool detailed) const
 
   data overall{};
   for (size_t i = 0; i < data_.size(); ++i) {
-    if (detailed)
-      std::cout << " - " << names_[i] << ":\n";
+    if (detailed) std::cout << " - " << names_[i] << ":\n";
     for (size_t j = 0; j < data_[i].size(); ++j) {
-      if (detailed)
-        std::cout << "   " << std::setw(20) << std::left << txt[j] << " = " << data_[i][j] << "\n";
+      if (detailed) std::cout << "   " << std::setw(20) << std::left << txt[j] << " = " << data_[i][j] << "\n";
       overall[j] += data_[i][j];
     }
   }

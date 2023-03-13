@@ -20,11 +20,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from conans import ConanFile, CMake
+import os
+import re
+
+from conan import ConanFile
+from conan.tools.cmake import CMake, cmake_layout
+from conan.tools.files import copy, load, rmdir
+
 
 class Engine3dConan(ConanFile):
     name = "irrlicht-engine"
-    version = "1.0.0"
     author = "Train IT"
     license = "MIT License"
     homepage = "https://train-it.eu"
@@ -34,12 +39,28 @@ class Engine3dConan(ConanFile):
     default_options = {"shared": False, "fPIC": True}
     requires = "irrlicht/1.8.4@mpusz/testing"
     exports = ["LICENSE.md"]
-    exports_sources = ["include*", "src*", "CMakeLists.txt"]
-    generators = "cmake"
+    exports_sources = [
+        "include*",
+        "src*",
+        "CMakeLists.txt",
+        "irrlicht-engine-config.cmake.in",
+    ]
+    package_type = "library"
+    generators = "CMakeDeps", "CMakeToolchain"
+
+    def set_version(self):
+        content = load(self, os.path.join(self.recipe_folder, "CMakeLists.txt"))
+        version = re.search(
+            r"project\([^\)]+VERSION (\d+\.\d+\.\d+)[^\)]*\)", content
+        ).group(1)
+        self.version = version.strip()
 
     def config_options(self):
-        if self.settings.os == 'Windows':
+        if self.settings.os == "Windows":
             del self.options.fPIC
+
+    def layout(self):
+        cmake_layout(self)
 
     def build(self):
         cmake = CMake(self)
@@ -47,13 +68,18 @@ class Engine3dConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy("*license*", dst="licenses", ignore_case=True, keep_path=False)
-        self.copy(pattern="*", dst="include", src="include")
-        self.copy(pattern="*.dll", dst="bin", keep_path=False)
-        self.copy(pattern="*.lib", dst="lib", keep_path=False)
-        self.copy(pattern="*.a", dst="lib", keep_path=False)
-        self.copy(pattern="*.so*", dst="lib", keep_path=False)
-        self.copy(pattern="*.dylib", dst="lib", keep_path=False)
+        copy(
+            self,
+            "LICENSE.md",
+            self.source_folder,
+            os.path.join(self.package_folder, "licenses"),
+        )
+        cmake = CMake(self)
+        cmake.install()
+        rmdir(self, os.path.join(self.package_folder, "lib", "cmake"))
 
     def package_info(self):
-        self.cpp_info.libs = ["engine"]
+        self.cpp_info.components["engine"].libs = ["irrlicht-engine"]
+        self.cpp_info.components["engine"].set_property(
+            "cmake_target_name", "irrlicht::engine"
+        )

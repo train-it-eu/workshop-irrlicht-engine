@@ -25,7 +25,7 @@
  * (http://irrlicht.sourceforge.net/docu/example007.html)
  */
 
-#include "engine.h"
+#include <irrlicht-engine/engine.h>
 #include <cassert>
 #include <string>
 
@@ -50,8 +50,7 @@ int workshop::selector::init(engine* e, object_handle* object)
   assert(r->smgr);
 
   resource_ = r->smgr->createTriangleSelector(object->resource_);
-  if (!resource_)
-    return SELECTOR_INIT_FAIL;
+  if (!resource_) return SELECTOR_INIT_FAIL;
   return SELECTOR_INIT_SUCCESS;
 }
 
@@ -67,8 +66,7 @@ workshop::selector::selector() : resource_(nullptr) {}
 
 workshop::selector::~selector()
 {
-  if (resource_)
-    destroy();
+  if (resource_) destroy();
 }
 
 /* ********************************* O B J E C T ********************************* */
@@ -86,8 +84,7 @@ bool workshop::object_handle::resource_set(engine* e)
     case type_faerie: {
       // add an MD2 node, which uses vertex-based animation
       irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_path() + "/media/faerie.md2").c_str());
-      if (!mesh)
-        return false;
+      if (!mesh) return false;
       resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
       resource_->setScale(irr::core::vector3df(1.6f));
       resource_->setMD2Animation(irr::scene::EMAT_POINT);
@@ -108,8 +105,7 @@ bool workshop::object_handle::resource_set(engine* e)
     case type_ninja: {
       // this B3D file uses skinned skeletal animation
       irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_path() + "/media/ninja.b3d").c_str());
-      if (!mesh)
-        return false;
+      if (!mesh) return false;
       resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
       resource_->setScale(irr::core::vector3df(10));
       resource_->setAnimationSpeed(8.f);
@@ -121,8 +117,7 @@ bool workshop::object_handle::resource_set(engine* e)
     case type_dwarf: {
       // this X file uses skeletal animation, but without skinning
       irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_path() + "/media/dwarf.x").c_str());
-      if (!mesh)
-        return false;
+      if (!mesh) return false;
       resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
       resource_->setAnimationSpeed(20.f);
       resource_->getMaterial(0).Lighting = true;
@@ -132,8 +127,7 @@ bool workshop::object_handle::resource_set(engine* e)
     case type_yodan: {
       // this mdl file uses skinned skeletal animation
       irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_path() + "/media/yodan.mdl").c_str());
-      if (!mesh)
-        return false;
+      if (!mesh) return false;
       resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
       resource_->setScale(irr::core::vector3df(0.8f));
       resource_->getMaterial(0).Lighting = true;
@@ -212,12 +206,11 @@ int workshop::camera::init(irr::scene::ISceneManager* smgr, irr::scene::IMeshSce
   assert(level);
 
   resource_ = smgr->addCameraSceneNodeFPS(0, 50.0f, .3f, id_flag_not_pickable, 0, 0, true, 2.f);
-  if (!resource_)
-    return 1;
+  if (!resource_) return 1;
 
   irr::scene::ISceneNodeAnimator* anim =
-      smgr->createCollisionResponseAnimator(level->getTriangleSelector(), resource_, irr::core::vector3df(30, 50, 30),
-                                            irr::core::vector3df(0, -10, 0), irr::core::vector3df(0, 30, 0));
+    smgr->createCollisionResponseAnimator(level->getTriangleSelector(), resource_, irr::core::vector3df(30, 50, 30),
+                                          irr::core::vector3df(0, -10, 0), irr::core::vector3df(0, 30, 0));
   if (!anim) {
     resource_ = nullptr;
     return 2;
@@ -251,8 +244,7 @@ bool workshop::engine::event_receiver::OnEvent(const irr::SEvent& event)
 {
   // Remember whether each key is down or up
   if (event.EventType == irr::EET_KEY_INPUT_EVENT)
-    if (event.KeyInput.PressedDown && event.KeyInput.Key == irr::KEY_KEY_Q)
-      quit_ = true;
+    if (event.KeyInput.PressedDown && event.KeyInput.Key == irr::KEY_KEY_Q) quit_ = true;
   return false;
 }
 
@@ -284,8 +276,7 @@ int workshop::engine::init_device(irr::u32 width, irr::u32 height, irr::u32 bpp,
   // create Irrlicht device - the most important object of the engine
   device_ = irr::createDevice(convert(device_type_), irr::core::dimension2d<irr::u32>(width, height), bpp, full_screen,
                               stencil, vsync, event_receiver_);
-  if (!device_)
-    return 2;
+  if (!device_) return 2;
 
   runtime_.smgr = device_->getSceneManager();
 
@@ -328,8 +319,7 @@ bool workshop::engine::add_laser()
   }
 
   laser_ = runtime_.smgr->addBillboardSceneNode();
-  if (!laser_)
-    return false;
+  if (!laser_) return false;
 
   if (!runtime_.driver) {
     assert(device_);
@@ -360,19 +350,17 @@ int workshop::engine::add_level(irr::scene::IMeshSceneNode** level)
 
   // get mesh
   irr::scene::IAnimatedMesh* q3_level_mesh = runtime_.smgr->getMesh("20kdm2.bsp");
-  if (!q3_level_mesh)
-    return 1;
+  if (!q3_level_mesh) return 1;
 
   // add node resource
   irr::scene::IMeshSceneNode* q3_node =
-      runtime_.smgr->addOctreeSceneNode(q3_level_mesh->getMesh(0), nullptr, id_flag_is_pickable);
-  if (!q3_node)
-    return 2;
+    runtime_.smgr->addOctreeSceneNode(q3_level_mesh->getMesh(0), nullptr, id_flag_is_pickable);
+  if (!q3_node) return 2;
   q3_node->setPosition(irr::core::vector3df(-1350, -130, -1400));
 
   // assign triangle selector
   irr::scene::ITriangleSelector* selector =
-      runtime_.smgr->createOctreeTriangleSelector(q3_node->getMesh(), q3_node, 128);
+    runtime_.smgr->createOctreeTriangleSelector(q3_node->getMesh(), q3_node, 128);
   if (!selector) {
     return 3;
   }
@@ -391,8 +379,7 @@ int workshop::engine::create_camera(camera** c)
     assert(c);
 
     camera_ = new (std::nothrow) camera;
-    if (!camera_)
-      return 1;
+    if (!camera_) return 1;
 
     if (!runtime_.smgr) {
       assert(device_);
@@ -432,9 +419,8 @@ int workshop::engine::add_light()
     runtime_.smgr = device_->getSceneManager();
   }
   irr::scene::ILightSceneNode* light = runtime_.smgr->addLightSceneNode(
-      0, irr::core::vector3df(-60, 100, 400), irr::video::SColorf(1.0f, 1.0f, 1.0f, 1.0f), 600.0f);
-  if (!light)
-    return 1;
+    0, irr::core::vector3df(-60, 100, 400), irr::video::SColorf(1.0f, 1.0f, 1.0f, 1.0f), 600.0f);
+  if (!light) return 1;
 
   light->setID(id_flag_not_pickable);  // make it an invalid target for selection.
   return 0;
@@ -460,10 +446,8 @@ workshop::engine::engine(const std::string& irrlicht_path, device_type* type) :
 
 workshop::engine::~engine()
 {
-  if (device_)
-    device_->drop();
-  if (event_receiver_)
-    delete event_receiver_;
+  if (device_) device_->drop();
+  if (event_receiver_) delete event_receiver_;
 }
 
 void workshop::engine::draw_label(const std::string& label)
@@ -472,9 +456,9 @@ void workshop::engine::draw_label(const std::string& label)
   assert(runtime_.driver);
 
   font_->draw(
-      std::wstring(label.begin(), label.end()).c_str(),
-      irr::core::rect<irr::s32>(100, 10, static_cast<irr::s32>(runtime_.driver->getScreenSize().Width - 100), 60),
-      irr::video::SColor(0xff, 0xff, 0xff, 0xf0), true, true);
+    std::wstring(label.begin(), label.end()).c_str(),
+    irr::core::rect<irr::s32>(100, 10, static_cast<irr::s32>(runtime_.driver->getScreenSize().Width - 100), 60),
+    irr::video::SColor(0xff, 0xff, 0xff, 0xf0), true, true);
 }
 
 int workshop::engine::process_collisions()
@@ -491,7 +475,7 @@ int workshop::engine::process_collisions()
   irr::core::triangle3df hit_triangle;  // used to show which triangle has been hit
   irr::scene::ISceneCollisionManager* coll_man = runtime_.smgr->getSceneCollisionManager();
   irr::scene::ISceneNode* selected_scene_node =
-      coll_man->getSceneNodeAndCollisionPointFromRay(ray, intersection, hit_triangle, id_flag_is_pickable);
+    coll_man->getSceneNodeAndCollisionPointFromRay(ray, intersection, hit_triangle, id_flag_is_pickable);
   if (selected_scene_node) {
     // show laser and move it to position of detected collision with other node
     assert(laser_);
@@ -502,8 +486,7 @@ int workshop::engine::process_collisions()
     if ((selected_scene_node->getID() & id_flag_is_highlightable) == id_flag_is_highlightable) {
       if (!selected_object_ || selected_object_->resource_ != selected_scene_node) {
         selected_object_ = new (std::nothrow) object_handle(object_handle::type_unknown, nullptr);
-        if (!selected_object_)
-          return -1;
+        if (!selected_object_) return -1;
         selected_object_->resource_set(static_cast<irr::scene::IAnimatedMeshSceneNode*>(selected_scene_node));
       }
     } else
@@ -540,8 +523,7 @@ bool workshop::engine::begin_scene()
   assert(runtime_.guienv);
   assert(font_);
 
-  if (!runtime_.driver->beginScene())
-    return false;
+  if (!runtime_.driver->beginScene()) return false;
 
   runtime_.smgr->drawAll();
   runtime_.guienv->drawAll();
@@ -549,8 +531,7 @@ bool workshop::engine::begin_scene()
   const irr::s32 bottom = static_cast<irr::s32>(runtime_.driver->getScreenSize().Height);
   font_->draw(L"Press 'q' to exit", irr::core::rect<irr::s32>(10, top, 200, bottom),
               irr::video::SColor(0xff, 0xff, 0xff, 0xf0), false, true);
-  if (process_collisions() < 0)
-    return false;
+  if (process_collisions() < 0) return false;
 
   return true;
 }
