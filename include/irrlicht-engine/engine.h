@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "utils.h"
+#include <irrlicht-engine/utils.h>
 #include <irrlicht.h>
 
 namespace workshop {

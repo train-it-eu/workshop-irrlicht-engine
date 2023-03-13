@@ -37,7 +37,6 @@ class Engine3dConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
-    requires = "irrlicht/1.8.4@mpusz/testing"
     exports = ["LICENSE.md"]
     exports_sources = [
         "include*",
@@ -58,6 +57,13 @@ class Engine3dConan(ConanFile):
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
+
+    def requirements(self):
+        self.requires(
+            "irrlicht/1.8.4@mpusz/testing",
+            transitive_headers=True,
+            transitive_libs=True,
+        )
 
     def layout(self):
         cmake_layout(self)
