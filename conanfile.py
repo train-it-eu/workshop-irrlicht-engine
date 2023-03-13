@@ -85,7 +85,5 @@ class Engine3dConan(ConanFile):
         rmdir(self, os.path.join(self.package_folder, "lib", "cmake"))
 
     def package_info(self):
-        self.cpp_info.components["engine"].libs = ["irrlicht-engine"]
-        self.cpp_info.components["engine"].set_property(
-            "cmake_target_name", "irrlicht::engine"
-        )
+        self.cpp_info.libs = ["irrlicht-engine"]
+        self.cpp_info.set_property("cmake_target_name", "irrlicht::engine")
