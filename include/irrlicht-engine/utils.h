@@ -31,13 +31,13 @@
 namespace workshop {
 
 /**
- * Class that cannot be copied
+ * Class that cannot be copied or moved
  */
-class noncopyable {
+class immovable {
 public:
-  noncopyable() = default;
-  noncopyable(const noncopyable&) = delete;
-  noncopyable& operator=(const noncopyable&) = delete;
+  immovable() = default;
+  immovable(const immovable&) = delete;
+  immovable& operator=(const immovable&) = delete;
 };
 
 /**
@@ -45,7 +45,7 @@ public:
  *
  * @note Singleton design pattern
  */
-class counters : noncopyable {
+class counters : immovable {
 public:
   enum {
     constructions,
@@ -60,10 +60,10 @@ public:
   static constexpr int num = last + 1;
   using data = std::array<int, num>;
 
-  static counters& instance();
+  [[nodiscard]] static counters& instance();
 
-  data& add(const std::string& name);
-  bool validate() const;
+  [[nodiscard]] data& add(const std::string& name);
+  [[nodiscard]] bool validate() const;
   void print(bool detailed) const;
 
 private:
@@ -92,7 +92,7 @@ public:
   // clang-format on
 
   // needed to allow `= default` comparison operators generation in `T`
-  auto operator<=>(const type_counters&) const = default;
+  [[nodiscard]] auto operator<=>(const type_counters&) const = default;
 };
 
 template<class T>
