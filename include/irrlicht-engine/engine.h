@@ -59,7 +59,7 @@ private:
  */
 class object_handle : type_counters<object_handle> {
 public:
-  enum type { type_unknown = -2, type_invalid = -1, type_faerie, type_ninja, type_dwarf, type_yodan, type_num };
+  enum class type { faerie, ninja, dwarf, yodan };
 
   /**
    * Adds new character to workshop::engine
@@ -81,8 +81,6 @@ public:
 private:
   friend engine;
   friend workshop::selector;
-  type type_;                                               /// cached object type
-  const std::string* name_;                                 /// used temporarily during construction
   irr::scene::IAnimatedMeshSceneNode* resource_ = nullptr;  /// Irrlicht resource
 };
 
@@ -121,7 +119,14 @@ public:
     irr::gui::IGUIEnvironment* guienv;  /// Irrlicht GUI interface handler
   };
 
-  enum device_type { device_invalid = -1, device_null, device_software, device_d3d9, device_opengl, device_num };
+  enum class device_type {
+    null,
+    software,
+    d3d9,
+    opengl,
+
+    last = opengl
+  };
 
   /**
    * @brief Event handler class
@@ -129,22 +134,23 @@ public:
    * @c event_receiver class is used to detect keypress needed to end workshop application.
    */
   class event_receiver : public irr::IEventReceiver, type_counters<event_receiver> {
-  public:
     bool quit_ = false;  /// variable used to exit main loop
+  public:
     virtual bool OnEvent(const irr::SEvent& event);
+    bool quit() const { return quit_; }
   };
 
   /**
    * Constructor
    *
    * @param irrlicht_media_path  Path to media directory of an Irrlicht library
-   * @param width                Window/Screen width
-   * @param height               Window/Screen height
-   * @param bpp                  Bits per pixel valid only in full screen mode (16 or 32)
-   * @param full_screen          Enables full screen mode
-   * @param stencil              Enables usage of stencil buffer for shadows
-   * @param vsync                Enables vertical sync
-   * @param type                 Type of the device to use or default
+   * @param width          Window/Screen width
+   * @param height         Window/Screen height
+   * @param bpp            Bits per pixel valid only in full screen mode (16 or 32)
+   * @param full_screen    Enables full screen mode
+   * @param stencil        Enables usage of stencil buffer for shadows
+   * @param vsync          Enables vertical sync
+   * @param type           Type of the device to use or default
    */
   explicit engine(const std::string& irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp,
                   bool full_screen, bool stencil, bool vsync, device_type* type);
@@ -156,39 +162,28 @@ public:
 
   void draw_label(const std::string& label);
 
-  /**
-   * @brief Runs the engine
-   *
-   * Should be used in such a way:
-   * @code
-   *   while(engine->run()) {
-   *     if(engine->window_active()) {
-   *       engine->begin_scene();
-   *
-   *       // draw everything here
-   *
-   *       engine->end_scene();
-   *     }
-   *     else
-   *       engine->yield();
-   *   }
-   * @endcode
-   *
-   * @return Status
-   */
-  bool run();
-  bool window_active();
-  void begin_scene();
-  void end_scene();
-  void yield();
+  template<typename Func>
+  void run(Func f)
+  {
+    while (run()) {
+      if (window_active()) {
+        begin_scene();
+
+        // run user's code
+        f();
+
+        end_scene();
+      } else
+        yield();
+    }
+  }
 
 private:
   friend object_handle;
   friend selector;
 
-  const std::string irrlicht_media_path_;                  /// path to media directory of the Irrlicht library
-  device_type device_type_ = device_type::device_invalid;  /// device type
-  event_receiver* event_receiver_{};                       /// event receiver
+  const std::string irrlicht_media_path_;  /// ath to media directory of the Irrlicht library
+  event_receiver event_receiver_;          /// event receiver
 
   irr::IrrlichtDevice* device_{};             /// Irrlicht device - the most important object of the engine
   irr_runtime runtime_{};                     /// Irrlicht runtime
@@ -200,6 +195,11 @@ private:
 
   irr_runtime* runtime() { return &runtime_; }
   void process_collisions();
+  bool run();
+  bool window_active();
+  void begin_scene();
+  void end_scene();
+  void yield();
 };
 
 }  // namespace workshop
