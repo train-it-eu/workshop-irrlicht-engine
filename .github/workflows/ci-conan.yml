@@ -236,9 +236,9 @@ jobs:
         shell: bash
         run: |
           conan create . --user train-it --channel stable -b irrlicht-engine -b missing -c tools.cmake.cmaketoolchain:generator="Ninja Multi-Config"
-      - name: Upload irrlicht Conan package
+      - name: Upload irrlicht-engine Conan package
         if: github.ref == 'refs/heads/master' || env.CHANNEL == 'stable'
         shell: bash
         run: |
           conan remote login artifactory ${{ secrets.CONAN_LOGIN_USERNAME }} -p ${{ secrets.CONAN_PASSWORD }}
-          conan upload "irrlicht*" -r artifactory --confirm
+          conan upload "irrlicht-engine*" -r artifactory --confirm
