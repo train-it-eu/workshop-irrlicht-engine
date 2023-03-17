@@ -92,7 +92,7 @@ public:
   // clang-format on
 
   // needed to allow `= default` comparison operators generation in `T`
-  bool operator<=>(const type_counters&) const = default;
+  auto operator<=>(const type_counters&) const = default;
 };
 
 template<class T>
