@@ -24,6 +24,7 @@ import os
 import re
 
 from conan import ConanFile
+from conan.tools.build import check_min_cppstd
 from conan.tools.cmake import CMake, cmake_layout
 from conan.tools.files import copy, load, rmdir
 
@@ -64,6 +65,9 @@ class Engine3dConan(ConanFile):
             transitive_headers=True,
             transitive_libs=True,
         )
+
+    def validate(self):
+        check_min_cppstd(self, 20)
 
     def layout(self):
         cmake_layout(self)
