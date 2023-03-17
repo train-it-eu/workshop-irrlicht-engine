@@ -83,13 +83,13 @@ bool workshop::object_handle::resource_set(engine* e)
   switch (type_) {
     case type_faerie: {
       // add an MD2 node, which uses vertex-based animation
-      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_path() + "/media/faerie.md2").c_str());
+      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_media_path() + "/faerie.md2").c_str());
       if (!mesh) return false;
       resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
       resource_->setScale(irr::core::vector3df(1.6f));
       resource_->setMD2Animation(irr::scene::EMAT_POINT);
       resource_->setAnimationSpeed(20.f);
-      irr::video::ITexture* tex = r->driver->getTexture((e->irrlicht_path() + "/media/faerie2.bmp").c_str());
+      irr::video::ITexture* tex = r->driver->getTexture((e->irrlicht_media_path() + "/faerie2.bmp").c_str());
       if (!tex) {
         resource_ = nullptr;
         return false;
@@ -104,7 +104,7 @@ bool workshop::object_handle::resource_set(engine* e)
 
     case type_ninja: {
       // this B3D file uses skinned skeletal animation
-      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_path() + "/media/ninja.b3d").c_str());
+      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_media_path() + "/ninja.b3d").c_str());
       if (!mesh) return false;
       resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
       resource_->setScale(irr::core::vector3df(10));
@@ -116,7 +116,7 @@ bool workshop::object_handle::resource_set(engine* e)
 
     case type_dwarf: {
       // this X file uses skeletal animation, but without skinning
-      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_path() + "/media/dwarf.x").c_str());
+      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_media_path() + "/dwarf.x").c_str());
       if (!mesh) return false;
       resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
       resource_->setAnimationSpeed(20.f);
@@ -126,7 +126,7 @@ bool workshop::object_handle::resource_set(engine* e)
 
     case type_yodan: {
       // this mdl file uses skinned skeletal animation
-      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_path() + "/media/yodan.mdl").c_str());
+      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_media_path() + "/yodan.mdl").c_str());
       if (!mesh) return false;
       resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
       resource_->setScale(irr::core::vector3df(0.8f));
@@ -281,7 +281,7 @@ int workshop::engine::init_device(irr::u32 width, irr::u32 height, irr::u32 bpp,
   runtime_.smgr = device_->getSceneManager();
 
   // add Quake 3 map resources to Irrlicht local file system
-  if (!device_->getFileSystem()->addFileArchive((irrlicht_path() + "/media/map-20kdm2.pk3").c_str())) {
+  if (!device_->getFileSystem()->addFileArchive((irrlicht_media_path() + "/map-20kdm2.pk3").c_str())) {
     device_->drop();
     device_ = nullptr;
     return 3;
@@ -304,7 +304,7 @@ bool workshop::engine::font()
     assert(device_);
     runtime_.guienv = device_->getGUIEnvironment();
   }
-  font_ = runtime_.guienv->getFont((irrlicht_path_ + "/media/fonthaettenschweiler.bmp").c_str());
+  font_ = runtime_.guienv->getFont((irrlicht_media_path() + "/fonthaettenschweiler.bmp").c_str());
   return font_ != nullptr;
 }
 
@@ -326,7 +326,7 @@ bool workshop::engine::add_laser()
     runtime_.driver = device_->getVideoDriver();
   }
 
-  irr::video::ITexture* laser_tex = runtime_.driver->getTexture((irrlicht_path_ + "/media/particle.bmp").c_str());
+  irr::video::ITexture* laser_tex = runtime_.driver->getTexture((irrlicht_media_path() + "/particle.bmp").c_str());
   if (!laser_tex) {
     laser_ = nullptr;
     return false;
@@ -426,8 +426,8 @@ int workshop::engine::add_light()
   return 0;
 }
 
-workshop::engine::engine(const std::string& irrlicht_path, device_type* type) :
-    irrlicht_path_(irrlicht_path),
+workshop::engine::engine(const std::string& irrlicht_media_path, device_type* type) :
+    irrlicht_media_path_(irrlicht_media_path),
     device_type_(device_type::device_invalid),
     event_receiver_(nullptr),
     device_(nullptr),

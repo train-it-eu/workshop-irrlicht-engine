@@ -142,13 +142,13 @@ public:
   /**
    * Constructor
    *
-   * @param irrlicht_path  Path to main directory of Irrlicht library
+   * @param irrlicht_path  Path to media directory of an Irrlicht library
    * @param type           Type of the device to use or default if null
    */
-  engine(const std::string& irrlicht_path, device_type* type);
+  engine(const std::string& irrlicht_media_path, device_type* type);
   ~engine();
 
-  const std::string& irrlicht_path() const { return irrlicht_path_; }
+  const std::string& irrlicht_media_path() const { return irrlicht_media_path_; }
 
   /**
    * Creates and returns camera
@@ -250,9 +250,9 @@ private:
   friend object_handle;
   friend selector;
 
-  const std::string irrlicht_path_;  /// path to Irrlicht engine library
-  device_type device_type_;          /// device type
-  event_receiver* event_receiver_;   /// event receiver
+  const std::string irrlicht_media_path_;  /// path to media directory of the Irrlicht library
+  device_type device_type_;                /// device type
+  event_receiver* event_receiver_;         /// event receiver
 
   irr::IrrlichtDevice* device_;             /// Irrlicht device - the most important object of the engine
   irr_runtime runtime_;                     /// Irrlicht runtime
