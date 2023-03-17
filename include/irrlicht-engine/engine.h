@@ -31,38 +31,22 @@ namespace workshop {
 class object_handle;
 class engine;
 
-#define SELECTOR_INIT_FAIL 0
-#define SELECTOR_INIT_SUCCESS 1
-
 /**
  * @brief Irrlicht selector wrapper class
  *
  * That class is providing the connection between engine and the object to enable objects visibility for collision
  * detection engine and allow possible selection with a laser beam.
+ *
+ * @note: Throws std::runtime_error in case of problems
  */
 class selector : type_counters<selector> {
 public:
-  selector();
+  explicit selector(engine* e, object_handle* object);
   ~selector();
-
-  /**
-   * Initializes resource
-   *
-   * @param engine Irrlicht Engine
-   * @param object Object to connect
-   *
-   * @return Initialization status
-   */
-  int init(engine* e, object_handle* object);
-
-  /**
-   * Releases resource
-   */
-  void destroy();
 
 private:
   friend object_handle;
-  irr::scene::ITriangleSelector* resource_;  /// Irrlicht resource
+  irr::scene::ITriangleSelector* resource_ = nullptr;  /// Irrlicht resource
 };
 
 /**
@@ -70,14 +54,23 @@ private:
  *
  * Wraps Irrlicht node interface and provides user friendly interface to create in engine (and refer later on) 1 of 4
  * fixed characters.
+ *
+ * @note: Throws std::runtime_error in case of problems
  */
 class object_handle : type_counters<object_handle> {
 public:
   enum type { type_unknown = -2, type_invalid = -1, type_faerie, type_ninja, type_dwarf, type_yodan, type_num };
 
-  object_handle(type t, const std::string* name);
-  bool resource_set(engine* e);
-  bool resource_set(irr::scene::IAnimatedMeshSceneNode* resource);
+  /**
+   * Adds new character to workshop::engine
+   */
+  explicit object_handle(engine* e, type t, const std::string* name);
+
+  /**
+   * Creates a reference to already existing Irrlicht node
+   */
+  explicit object_handle(irr::scene::IAnimatedMeshSceneNode* resource);
+
   void position(float x, float y, float z);
   void rotation(float x, float y, float z);
   void selector(selector* s);
@@ -88,9 +81,9 @@ public:
 private:
   friend engine;
   friend workshop::selector;
-  type type_;                                     /// cached object type
-  const std::string* name_;                       /// used temporarily during construction
-  irr::scene::IAnimatedMeshSceneNode* resource_;  /// Irrlicht resource
+  type type_;                                               /// cached object type
+  const std::string* name_;                                 /// used temporarily during construction
+  irr::scene::IAnimatedMeshSceneNode* resource_ = nullptr;  /// Irrlicht resource
 };
 
 /**
@@ -98,17 +91,18 @@ private:
  *
  * @c camera is providing the interface to position engine camera
  * according to user needs.
+ *
+ * @note: Throws std::runtime_error in case of problems
  */
 class camera : type_counters<camera> {
 public:
-  camera();
   void position(float x, float y, float z);
   void target(float x, float y, float z);
 
 private:
   friend engine;
   irr::scene::ICameraSceneNode* resource_;  /// Irrlicht resource
-  int init(irr::scene::ISceneManager* smgr, irr::scene::IMeshSceneNode* level);
+  explicit camera(irr::scene::ISceneManager* smgr, irr::scene::IMeshSceneNode* level);
 };
 
 /**
@@ -116,6 +110,8 @@ private:
  *
  * @c engine is the main 3D Engine class responsible for creating and configuring Irrlicht framework. It is also used to
  * create all entities used in our workshop like level, camera, objects and their selectors.
+ *
+ * @note: Throws std::runtime_error in case of problems
  */
 class engine : type_counters<engine> {
 public:
@@ -134,91 +130,31 @@ public:
    */
   class event_receiver : public irr::IEventReceiver, type_counters<event_receiver> {
   public:
-    bool quit_;  /// variable used to exit main loop
-    event_receiver() : quit_(false) {}
+    bool quit_ = false;  /// variable used to exit main loop
     virtual bool OnEvent(const irr::SEvent& event);
   };
 
   /**
    * Constructor
    *
-   * @param irrlicht_path  Path to media directory of an Irrlicht library
-   * @param type           Type of the device to use or default if null
+   * @param irrlicht_media_path  Path to media directory of an Irrlicht library
+   * @param width                Window/Screen width
+   * @param height               Window/Screen height
+   * @param bpp                  Bits per pixel valid only in full screen mode (16 or 32)
+   * @param full_screen          Enables full screen mode
+   * @param stencil              Enables usage of stencil buffer for shadows
+   * @param vsync                Enables vertical sync
+   * @param type                 Type of the device to use or default
    */
-  engine(const std::string& irrlicht_media_path, device_type* type);
+  explicit engine(const std::string& irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp,
+                  bool full_screen, bool stencil, bool vsync, device_type* type);
   ~engine();
 
   const std::string& irrlicht_media_path() const { return irrlicht_media_path_; }
-
-  /**
-   * Creates and returns camera
-   *
-   * @param c Created object
-   *
-   * @return Error code
-   */
-  int create_camera(camera** c);
-
-  /**
-   * Destroys camera
-   */
-  void destroy_camera();
-
-  /**
-   * Initializes device resource
-   *
-   * @param width          Window/Screen width
-   * @param height         Window/Screen height
-   * @param bpp            Bits per pixel valid only in full screen mode (16 or 32)
-   * @param full_screen    Enables full screen mode
-   * @param stencil        Enables usage of stencil buffer for shadows
-   * @param vsync          Enables vertical sync
-   *
-   * @return Error code
-   */
-  int init_device(irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen, bool stencil, bool vsync);
-
-  /**
-   * Adds custom font to the engine
-   *
-   * @return Status
-   */
-  bool font();
-
-  /**
-   * Configures laser
-   *
-   * @return Status
-   */
-  bool add_laser();
-
-  /**
-   * Adds a light so it is not dark out there
-   *
-   * @return Error code
-   */
-  int add_light();
-
-  /**
-   * Returns selected object
-   *
-   * @return Selected object
-   */
+  workshop::camera* camera() { return camera_; }
   object_handle* selected_object() const { return selected_object_; }
 
-  /**
-   * Draws custom label
-   *
-   * @param label Label to draw
-   */
   void draw_label(const std::string& label);
-
-  /**
-   * Creates internal event receiver
-   *
-   * @return Status
-   */
-  bool internal_event_receiver_create();
 
   /**
    * @brief Runs the engine
@@ -242,30 +178,28 @@ public:
    */
   bool run();
   bool window_active();
-  bool begin_scene();
-  bool end_scene();
+  void begin_scene();
+  void end_scene();
   void yield();
 
 private:
   friend object_handle;
   friend selector;
 
-  const std::string irrlicht_media_path_;  /// path to media directory of the Irrlicht library
-  device_type device_type_;                /// device type
-  event_receiver* event_receiver_;         /// event receiver
+  const std::string irrlicht_media_path_;                  /// path to media directory of the Irrlicht library
+  device_type device_type_ = device_type::device_invalid;  /// device type
+  event_receiver* event_receiver_{};                       /// event receiver
 
-  irr::IrrlichtDevice* device_;             /// Irrlicht device - the most important object of the engine
-  irr_runtime runtime_;                     /// Irrlicht runtime
-  irr::gui::IGUIFont* font_;                /// Irrlicht font resource to use
-  irr::scene::IBillboardSceneNode* laser_;  /// Irrlicht resource used for laser
+  irr::IrrlichtDevice* device_{};             /// Irrlicht device - the most important object of the engine
+  irr_runtime runtime_{};                     /// Irrlicht runtime
+  irr::gui::IGUIFont* font_{};                /// Irrlicht font resource to use
+  irr::scene::IBillboardSceneNode* laser_{};  /// Irrlicht resource used for laser
 
-  camera* camera_;                  /// engine camera
-  object_handle* selected_object_;  /// selected object found by collision detection algorithm
+  workshop::camera* camera_{};        /// engine camera
+  object_handle* selected_object_{};  /// selected object found by collision detection algorithm
 
-  irr::video::E_DRIVER_TYPE convert(device_type type);
-  int add_level(irr::scene::IMeshSceneNode** level);
   irr_runtime* runtime() { return &runtime_; }
-  int process_collisions();
+  void process_collisions();
 };
 
 }  // namespace workshop

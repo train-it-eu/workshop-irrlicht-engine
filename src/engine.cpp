@@ -27,6 +27,7 @@
 
 #include <irrlicht-engine/engine.h>
 #include <cassert>
+#include <stdexcept>
 #include <string>
 
 namespace {
@@ -39,103 +40,107 @@ const std::wstring workshop_title = L"Modern C++ Design - Part I";
 
 /* ********************************* S E L E C T O R ********************************* */
 
-int workshop::selector::init(engine* e, object_handle* object)
+namespace {
+
+irr::scene::ITriangleSelector* init_selector(workshop::engine::irr_runtime* r, irr::scene::IAnimatedMeshSceneNode* o)
 {
-  assert(resource_ == nullptr);
+  assert(r);
+  assert(r->smgr);
+  assert(o);
+
+  irr::scene::ITriangleSelector* resource = r->smgr->createTriangleSelector(o);
+  assert(resource);
+
+  return resource;
+}
+
+}  // namespace
+
+workshop::selector::selector(engine* e, object_handle* object)
+{
   assert(e);
   assert(object);
-  assert(object->resource_);
 
-  workshop::engine::irr_runtime* r = e->runtime();
-  assert(r->smgr);
-
-  resource_ = r->smgr->createTriangleSelector(object->resource_);
-  if (!resource_) return SELECTOR_INIT_FAIL;
-  return SELECTOR_INIT_SUCCESS;
+  resource_ = init_selector(e->runtime(), object->resource_);
 }
-
-void workshop::selector::destroy()
-{
-  assert(resource_);
-
-  resource_->drop();
-  resource_ = nullptr;
-}
-
-workshop::selector::selector() : resource_(nullptr) {}
 
 workshop::selector::~selector()
 {
-  if (resource_) destroy();
+  assert(resource_);
+  resource_->drop();
 }
 
 /* ********************************* O B J E C T ********************************* */
 
-bool workshop::object_handle::resource_set(engine* e)
-{
-  assert(resource_ == nullptr);
-  assert(e);
+namespace {
 
-  workshop::engine::irr_runtime* r = e->runtime();
+irr::scene::IAnimatedMeshSceneNode* init_object_handle(workshop::engine::irr_runtime* r,
+                                                       workshop::object_handle::type type, const std::string& name,
+                                                       const std::string& irrlicht_media_path)
+{
+  assert(r);
   assert(r->smgr);
   assert(r->driver);
 
-  switch (type_) {
-    case type_faerie: {
+  irr::scene::IAnimatedMeshSceneNode* resource = nullptr;
+
+  switch (type) {
+    case workshop::object_handle::type_faerie: {
       // add an MD2 node, which uses vertex-based animation
-      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_media_path() + "/faerie.md2").c_str());
-      if (!mesh) return false;
-      resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
-      resource_->setScale(irr::core::vector3df(1.6f));
-      resource_->setMD2Animation(irr::scene::EMAT_POINT);
-      resource_->setAnimationSpeed(20.f);
-      irr::video::ITexture* tex = r->driver->getTexture((e->irrlicht_media_path() + "/faerie2.bmp").c_str());
-      if (!tex) {
-        resource_ = nullptr;
-        return false;
-      }
+      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((irrlicht_media_path + "/faerie.md2").c_str());
+      if (!mesh) throw std::runtime_error("Cannot open mesh '" + irrlicht_media_path + "/faerie.md2'");
+      resource = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
+      assert(resource);
+      resource->setScale(irr::core::vector3df(1.6f));
+      resource->setMD2Animation(irr::scene::EMAT_POINT);
+      resource->setAnimationSpeed(20.f);
+      irr::video::ITexture* tex = r->driver->getTexture((irrlicht_media_path + "/faerie2.bmp").c_str());
+      if (!tex) throw std::runtime_error("Cannot open texture '" + irrlicht_media_path + "/faerie2.bmp'");
       irr::video::SMaterial material;
       material.setTexture(0, tex);
       material.Lighting = true;
       material.NormalizeNormals = true;
-      resource_->getMaterial(0) = material;
-      resource_->setName(name_->c_str());
+      resource->getMaterial(0) = material;
+      resource->setName(name.c_str());
     } break;
 
-    case type_ninja: {
+    case workshop::object_handle::type_ninja: {
       // this B3D file uses skinned skeletal animation
-      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_media_path() + "/ninja.b3d").c_str());
-      if (!mesh) return false;
-      resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
-      resource_->setScale(irr::core::vector3df(10));
-      resource_->setAnimationSpeed(8.f);
-      resource_->getMaterial(0).NormalizeNormals = true;
-      resource_->getMaterial(0).Lighting = true;
-      resource_->setName(name_->c_str());
+      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((irrlicht_media_path + "/ninja.b3d").c_str());
+      if (!mesh) throw std::runtime_error("Cannot open mesh '" + irrlicht_media_path + "/ninja.b3d'");
+      resource = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
+      assert(resource);
+      resource->setScale(irr::core::vector3df(10));
+      resource->setAnimationSpeed(8.f);
+      resource->getMaterial(0).NormalizeNormals = true;
+      resource->getMaterial(0).Lighting = true;
+      resource->setName(name.c_str());
     } break;
 
-    case type_dwarf: {
+    case workshop::object_handle::type_dwarf: {
       // this X file uses skeletal animation, but without skinning
-      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_media_path() + "/dwarf.x").c_str());
-      if (!mesh) return false;
-      resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
-      resource_->setAnimationSpeed(20.f);
-      resource_->getMaterial(0).Lighting = true;
-      resource_->setName(name_->c_str());
+      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((irrlicht_media_path + "/dwarf.x").c_str());
+      if (!mesh) throw std::runtime_error("Cannot open mesh '" + irrlicht_media_path + "/dwarf.x'");
+      resource = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
+      assert(resource);
+      resource->setAnimationSpeed(20.f);
+      resource->getMaterial(0).Lighting = true;
+      resource->setName(name.c_str());
     } break;
 
-    case type_yodan: {
+    case workshop::object_handle::type_yodan: {
       // this mdl file uses skinned skeletal animation
-      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((e->irrlicht_media_path() + "/yodan.mdl").c_str());
-      if (!mesh) return false;
-      resource_ = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
-      resource_->setScale(irr::core::vector3df(0.8f));
-      resource_->getMaterial(0).Lighting = true;
-      resource_->setAnimationSpeed(20.f);
-      resource_->setName(name_->c_str());
+      irr::scene::IAnimatedMesh* mesh = r->smgr->getMesh((irrlicht_media_path + "/yodan.mdl").c_str());
+      if (!mesh) throw std::runtime_error("Cannot open mesh '" + irrlicht_media_path + "/yodan.mdl'");
+      resource = r->smgr->addAnimatedMeshSceneNode(mesh, 0, id_flag_is_pickable | id_flag_is_highlightable);
+      assert(resource);
+      resource->setScale(irr::core::vector3df(0.8f));
+      resource->getMaterial(0).Lighting = true;
+      resource->setAnimationSpeed(20.f);
+      resource->setName(name.c_str());
     } break;
 
-    case type_unknown:
+    case workshop::object_handle::type_unknown:
       // nothing to do
       break;
 
@@ -143,18 +148,22 @@ bool workshop::object_handle::resource_set(engine* e)
       assert(0);
   }
 
-  return true;
+  return resource;
 }
 
-workshop::object_handle::object_handle(type t, const std::string* name) : type_(t), name_(name), resource_(nullptr) {}
+}  // namespace
 
-bool workshop::object_handle::resource_set(irr::scene::IAnimatedMeshSceneNode* resource)
+workshop::object_handle::object_handle(engine* e, type t, const std::string* name) : type_(t), name_(name)
 {
-  assert(resource_ == nullptr);
-  assert(resource);
+  assert(e);
+  assert(name);
 
-  resource_ = resource;
-  return true;
+  resource_ = init_object_handle(e->runtime(), type_, *name_, e->irrlicht_media_path());
+}
+
+workshop::object_handle::object_handle(irr::scene::IAnimatedMeshSceneNode* resource) : resource_(resource)
+{
+  assert(resource_);
 }
 
 void workshop::object_handle::position(float x, float y, float z)
@@ -199,30 +208,35 @@ void workshop::object_handle::name(std::string* name) const
 
 /* ********************************* C A M E R A ********************************* */
 
-int workshop::camera::init(irr::scene::ISceneManager* smgr, irr::scene::IMeshSceneNode* level)
+namespace {
+
+irr::scene::ICameraSceneNode* init_camera(irr::scene::ISceneManager* smgr, irr::scene::IMeshSceneNode* level)
 {
-  assert(resource_ == nullptr);
   assert(smgr);
   assert(level);
 
-  resource_ = smgr->addCameraSceneNodeFPS(0, 50.0f, .3f, id_flag_not_pickable, 0, 0, true, 2.f);
-  if (!resource_) return 1;
+  irr::scene::ICameraSceneNode* resource =
+    smgr->addCameraSceneNodeFPS(0, 50.0f, .3f, id_flag_not_pickable, 0, 0, true, 2.f);
+  if (!resource) throw std::runtime_error("Cannot add camera scene node");
 
   irr::scene::ISceneNodeAnimator* anim =
-    smgr->createCollisionResponseAnimator(level->getTriangleSelector(), resource_, irr::core::vector3df(30, 50, 30),
+    smgr->createCollisionResponseAnimator(level->getTriangleSelector(), resource, irr::core::vector3df(30, 50, 30),
                                           irr::core::vector3df(0, -10, 0), irr::core::vector3df(0, 30, 0));
-  if (!anim) {
-    resource_ = nullptr;
-    return 2;
-  }
+  if (!anim)
+    throw std::runtime_error("Cannot create scene node animator for doing automatic collision detection and response");
 
-  resource_->addAnimator(anim);
+  resource->addAnimator(anim);
   anim->drop();
 
-  return 0;
+  return resource;
 }
 
-workshop::camera::camera() : resource_(nullptr) {}
+}  // namespace
+
+workshop::camera::camera(irr::scene::ISceneManager* smgr, irr::scene::IMeshSceneNode* level) :
+    resource_(init_camera(smgr, level))
+{
+}
 
 void workshop::camera::position(float x, float y, float z)
 {
@@ -250,15 +264,9 @@ bool workshop::engine::event_receiver::OnEvent(const irr::SEvent& event)
 
 /* ********************************* 3 D   E N G I N E ********************************* */
 
-bool workshop::engine::internal_event_receiver_create()
-{
-  assert(event_receiver_ == nullptr);
+namespace {
 
-  event_receiver_ = new (std::nothrow) event_receiver;
-  return event_receiver_ != nullptr;
-}
-
-irr::video::E_DRIVER_TYPE workshop::engine::convert(device_type type)
+irr::video::E_DRIVER_TYPE convert(workshop::engine::device_type type)
 {
   irr::video::E_DRIVER_TYPE irr_type[] = {irr::video::EDT_NULL, irr::video::EDT_SOFTWARE, irr::video::EDT_DIRECT3D9,
                                           irr::video::EDT_OPENGL};
@@ -266,188 +274,133 @@ irr::video::E_DRIVER_TYPE workshop::engine::convert(device_type type)
   return irr_type[type];
 }
 
-int workshop::engine::init_device(irr::u32 width, irr::u32 height, irr::u32 bpp, bool full_screen, bool stencil,
-                                  bool vsync)
+irr::IrrlichtDevice* init_device(const std::string& irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp,
+                                 bool full_screen, bool stencil, bool vsync, workshop::engine::device_type device_type,
+                                 workshop::engine::event_receiver* event_receiver)
 {
-  assert(device_ == nullptr);
-  assert(runtime_.smgr == nullptr);
-  assert(event_receiver_);
+  assert(event_receiver);
 
   // create Irrlicht device - the most important object of the engine
-  device_ = irr::createDevice(convert(device_type_), irr::core::dimension2d<irr::u32>(width, height), bpp, full_screen,
-                              stencil, vsync, event_receiver_);
-  if (!device_) return 2;
-
-  runtime_.smgr = device_->getSceneManager();
+  irr::IrrlichtDevice* device = irr::createDevice(convert(device_type), irr::core::dimension2d<irr::u32>(width, height),
+                                                  bpp, full_screen, stencil, vsync, event_receiver);
+  if (!device) throw std::runtime_error("Failed to create a device");
 
   // add Quake 3 map resources to Irrlicht local file system
-  if (!device_->getFileSystem()->addFileArchive((irrlicht_media_path() + "/map-20kdm2.pk3").c_str())) {
-    device_->drop();
-    device_ = nullptr;
-    return 3;
+  if (!device->getFileSystem()->addFileArchive((irrlicht_media_path + "/map-20kdm2.pk3").c_str())) {
+    device->drop();
+    throw std::runtime_error("Cannot load archive '" + irrlicht_media_path + "/map-20kdm2.pk3'");
   }
 
-  device_->setWindowCaption(workshop_title.c_str());
+  device->setWindowCaption(workshop_title.c_str());
 
   // get rid of the mouse cursor.  We'll use a billboard to show what we're looking at.
-  device_->getCursorControl()->setVisible(false);
+  device->getCursorControl()->setVisible(false);
 
-  return 0;
+  return device;
 }
 
-bool workshop::engine::font()
+irr::gui::IGUIFont* init_font(irr::gui::IGUIEnvironment* guienv, const std::string& irrlicht_media_path)
 {
-  assert(font_ == nullptr);
+  assert(guienv);
 
-  // load custom font
-  if (!runtime_.guienv) {
-    assert(device_);
-    runtime_.guienv = device_->getGUIEnvironment();
-  }
-  font_ = runtime_.guienv->getFont((irrlicht_media_path() + "/fonthaettenschweiler.bmp").c_str());
-  return font_ != nullptr;
+  irr::gui::IGUIFont* font = guienv->getFont((irrlicht_media_path + "/fonthaettenschweiler.bmp").c_str());
+  if (!font) throw std::runtime_error("Cannot load font '" + irrlicht_media_path + "/fonthaettenschweiler.bmp'");
+  return font;
 }
 
-bool workshop::engine::add_laser()
+irr::scene::IBillboardSceneNode* init_laser(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* driver,
+                                            const std::string& irrlicht_media_path)
 {
-  assert(laser_ == nullptr);
+  assert(smgr);
+  assert(driver);
 
   // add the laser
-  if (!runtime_.smgr) {
-    assert(device_);
-    runtime_.smgr = device_->getSceneManager();
-  }
+  irr::scene::IBillboardSceneNode* laser = smgr->addBillboardSceneNode();
+  if (!laser) throw std::runtime_error("Cannot create a laser node");
 
-  laser_ = runtime_.smgr->addBillboardSceneNode();
-  if (!laser_) return false;
-
-  if (!runtime_.driver) {
-    assert(device_);
-    runtime_.driver = device_->getVideoDriver();
-  }
-
-  irr::video::ITexture* laser_tex = runtime_.driver->getTexture((irrlicht_media_path() + "/particle.bmp").c_str());
-  if (!laser_tex) {
-    laser_ = nullptr;
-    return false;
-  }
+  irr::video::ITexture* laser_tex = driver->getTexture((irrlicht_media_path + "/particle.bmp").c_str());
+  if (!laser_tex) throw std::runtime_error("Cannot open texture '" + irrlicht_media_path + "/particle.bmp'");
 
   // init laser
-  laser_->setMaterialType(irr::video::EMT_TRANSPARENT_ADD_COLOR);
-  laser_->setMaterialTexture(0, laser_tex);
-  laser_->setMaterialFlag(irr::video::EMF_LIGHTING, false);
-  laser_->setMaterialFlag(irr::video::EMF_ZBUFFER, false);
-  laser_->setSize(irr::core::dimension2d<irr::f32>(20.0f, 20.0f));
-  laser_->setID(id_flag_not_pickable);  // this ensures that we don't accidentally ray-pick it
+  laser->setMaterialType(irr::video::EMT_TRANSPARENT_ADD_COLOR);
+  laser->setMaterialTexture(0, laser_tex);
+  laser->setMaterialFlag(irr::video::EMF_LIGHTING, false);
+  laser->setMaterialFlag(irr::video::EMF_ZBUFFER, false);
+  laser->setSize(irr::core::dimension2d<irr::f32>(20.0f, 20.0f));
+  laser->setID(id_flag_not_pickable);  // this ensures that we don't accidentally ray-pick it
 
-  return true;
+  return laser;
 }
 
-int workshop::engine::add_level(irr::scene::IMeshSceneNode** level)
+irr::scene::IMeshSceneNode* add_level(irr::scene::ISceneManager* smgr)
 {
-  assert(level);
-  assert(runtime_.smgr);
+  assert(smgr);
 
   // get mesh
-  irr::scene::IAnimatedMesh* q3_level_mesh = runtime_.smgr->getMesh("20kdm2.bsp");
-  if (!q3_level_mesh) return 1;
+  irr::scene::IAnimatedMesh* q3_level_mesh = smgr->getMesh("20kdm2.bsp");
+  if (!q3_level_mesh) throw std::runtime_error("Cannot open mesh '20kdm2.bsp'");
 
   // add node resource
   irr::scene::IMeshSceneNode* q3_node =
-    runtime_.smgr->addOctreeSceneNode(q3_level_mesh->getMesh(0), nullptr, id_flag_is_pickable);
-  if (!q3_node) return 2;
+    smgr->addOctreeSceneNode(q3_level_mesh->getMesh(0), nullptr, id_flag_is_pickable);
+  if (!q3_node) throw std::runtime_error("Cannot add scene node");
   q3_node->setPosition(irr::core::vector3df(-1350, -130, -1400));
 
   // assign triangle selector
-  irr::scene::ITriangleSelector* selector =
-    runtime_.smgr->createOctreeTriangleSelector(q3_node->getMesh(), q3_node, 128);
-  if (!selector) {
-    return 3;
-  }
+  irr::scene::ITriangleSelector* selector = smgr->createOctreeTriangleSelector(q3_node->getMesh(), q3_node, 128);
+  if (!selector) throw std::runtime_error("Cannot create octree selector");
   q3_node->setTriangleSelector(selector);
   selector->drop();
 
-  *level = q3_node;
-
-  return 0;
+  return q3_node;
 }
 
-int workshop::engine::create_camera(camera** c)
+void add_light(irr::scene::ISceneManager* smgr)
 {
-  if (camera_ == nullptr) {
-    // create camera
-    assert(c);
+  assert(smgr);
 
-    camera_ = new (std::nothrow) camera;
-    if (!camera_) return 1;
-
-    if (!runtime_.smgr) {
-      assert(device_);
-      runtime_.smgr = device_->getSceneManager();
-    }
-
-    irr::scene::IMeshSceneNode* level = nullptr;
-    if (add_level(&level)) {
-      destroy_camera();
-      return 2;
-    }
-
-    if (camera_->init(runtime_.smgr, level)) {
-      destroy_camera();
-      return 3;
-    }
-  }
-
-  assert(camera_);
-  *c = camera_;
-  return 0;
-}
-
-void workshop::engine::destroy_camera()
-{
-  assert(camera_);
-
-  delete camera_;
-  camera_ = nullptr;
-}
-
-int workshop::engine::add_light()
-{
   // add a light, so that the unselected nodes aren't completely dark.
-  if (!runtime_.smgr) {
-    assert(device_);
-    runtime_.smgr = device_->getSceneManager();
-  }
-  irr::scene::ILightSceneNode* light = runtime_.smgr->addLightSceneNode(
-    0, irr::core::vector3df(-60, 100, 400), irr::video::SColorf(1.0f, 1.0f, 1.0f, 1.0f), 600.0f);
-  if (!light) return 1;
+  irr::scene::ILightSceneNode* light = smgr->addLightSceneNode(0, irr::core::vector3df(-60, 100, 400),
+                                                               irr::video::SColorf(1.0f, 1.0f, 1.0f, 1.0f), 600.0f);
+  if (!light) throw std::runtime_error("Cannot add dynamic light scene node");
 
   light->setID(id_flag_not_pickable);  // make it an invalid target for selection.
-  return 0;
 }
 
-workshop::engine::engine(const std::string& irrlicht_media_path, device_type* type) :
-    irrlicht_media_path_(irrlicht_media_path),
-    device_type_(device_type::device_invalid),
-    event_receiver_(nullptr),
-    device_(nullptr),
-    runtime_{nullptr, nullptr, nullptr},
-    font_(nullptr),
-    laser_(nullptr),
-    camera_(nullptr),
-    selected_object_(nullptr)
+}  // namespace
+
+workshop::engine::engine(const std::string& irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp,
+                         bool full_screen, bool stencil, bool vsync, device_type* type) :
+    irrlicht_media_path_(irrlicht_media_path)
 {
   if (type) {
     device_type_ = *type;
   } else {
     device_type_ = device_type::device_software;
   }
+
+  try {
+    event_receiver_ = new event_receiver;
+    device_ =
+      init_device(irrlicht_media_path_, width, height, bpp, full_screen, stencil, vsync, device_type_, event_receiver_);
+    runtime_ = {device_->getVideoDriver(), device_->getSceneManager(), device_->getGUIEnvironment()};
+    font_ = init_font(runtime_.guienv, irrlicht_media_path_);
+    laser_ = init_laser(runtime_.smgr, runtime_.driver, irrlicht_media_path_);
+    camera_ = new workshop::camera(runtime_.smgr, add_level(runtime_.smgr));
+    add_light(runtime_.smgr);
+  } catch (...) {
+    delete camera_;
+    if (device_) device_->drop();
+    delete event_receiver_;
+    throw;
+  }
 }
 
 workshop::engine::~engine()
 {
+  delete camera_;
   if (device_) device_->drop();
-  if (event_receiver_) delete event_receiver_;
+  delete event_receiver_;
 }
 
 void workshop::engine::draw_label(const std::string& label)
@@ -461,9 +414,8 @@ void workshop::engine::draw_label(const std::string& label)
     irr::video::SColor(0xff, 0xff, 0xff, 0xf0), true, true);
 }
 
-int workshop::engine::process_collisions()
+void workshop::engine::process_collisions()
 {
-  assert(camera_);
   assert(camera_->resource_);
   assert(runtime_.smgr);
 
@@ -484,11 +436,8 @@ int workshop::engine::process_collisions()
 
     // check if it is a collision with one of our characters and if yes cache it for further use
     if ((selected_scene_node->getID() & id_flag_is_highlightable) == id_flag_is_highlightable) {
-      if (!selected_object_ || selected_object_->resource_ != selected_scene_node) {
-        selected_object_ = new (std::nothrow) object_handle(object_handle::type_unknown, nullptr);
-        if (!selected_object_) return -1;
-        selected_object_->resource_set(static_cast<irr::scene::IAnimatedMeshSceneNode*>(selected_scene_node));
-      }
+      if (!selected_object_ || selected_object_->resource_ != selected_scene_node)
+        selected_object_ = new object_handle(static_cast<irr::scene::IAnimatedMeshSceneNode*>(selected_scene_node));
     } else
       selected_object_ = nullptr;
   } else {
@@ -497,8 +446,6 @@ int workshop::engine::process_collisions()
     // hide laser to simulate infinity distance
     laser_->setVisible(false);
   }
-
-  return 0;
 }
 
 bool workshop::engine::run()
@@ -516,14 +463,14 @@ bool workshop::engine::window_active()
   return device_->isWindowActive();
 }
 
-bool workshop::engine::begin_scene()
+void workshop::engine::begin_scene()
 {
   assert(runtime_.driver);
   assert(runtime_.smgr);
   assert(runtime_.guienv);
   assert(font_);
 
-  if (!runtime_.driver->beginScene()) return false;
+  if (!runtime_.driver->beginScene()) throw std::runtime_error("begin_scene() failed");
 
   runtime_.smgr->drawAll();
   runtime_.guienv->drawAll();
@@ -531,16 +478,14 @@ bool workshop::engine::begin_scene()
   const irr::s32 bottom = static_cast<irr::s32>(runtime_.driver->getScreenSize().Height);
   font_->draw(L"Press 'q' to exit", irr::core::rect<irr::s32>(10, top, 200, bottom),
               irr::video::SColor(0xff, 0xff, 0xff, 0xf0), false, true);
-  if (process_collisions() < 0) return false;
-
-  return true;
+  process_collisions();
 }
 
-bool workshop::engine::end_scene()
+void workshop::engine::end_scene()
 {
   assert(runtime_.driver);
 
-  return runtime_.driver->endScene();
+  if (!runtime_.driver->endScene()) throw std::runtime_error("end_scene() failed");
 }
 
 void workshop::engine::yield()
