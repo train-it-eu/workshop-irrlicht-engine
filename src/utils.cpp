@@ -43,7 +43,7 @@ namespace {
 
 #if _MSC_VER
 
-std::string& demangle(const std::string& name) { return name; }
+const std::string& demangle(const std::string& name) { return name; }
 
 #else
 
@@ -53,7 +53,7 @@ struct free_deleter {
 };
 
 template<typename T>
-using c_ptr = std::unique_ptr<T, free_deleter<T>>;
+using c_ptr = std::unique_ptr<T, free_deleter<T> >;
 
 std::string demangle(const std::string& mangled)
 {
