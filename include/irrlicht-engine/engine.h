@@ -29,6 +29,7 @@
 #include <irrlicht-engine/utils.h>
 #include <nonstd/observer_ptr.hpp>
 #include <irrlicht.h>
+#include <concepts>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -37,7 +38,7 @@
 
 namespace workshop {
 
-template<typename T>
+template<std::derived_from<irr::IReferenceCounted> T>
 using droppable_res_ptr = std::unique_ptr<T, decltype([](auto* ptr) { ptr->drop(); })>;
 
 // forward declarations
@@ -97,8 +98,7 @@ private:
 };
 
 // Copyable
-static_assert(std::is_copy_constructible_v<object_handle>);
-static_assert(std::is_copy_assignable_v<object_handle>);
+static_assert(std::copyable<object_handle>);
 
 /**
  * @brief Irrlicht camera object wrapper
@@ -192,7 +192,7 @@ public:
 
   void draw_label(const std::string& label);
 
-  template<typename Func>
+  template<std::invocable Func>
   void run(Func f)
   {
     while (device_->run() && !event_receiver_.quit()) {

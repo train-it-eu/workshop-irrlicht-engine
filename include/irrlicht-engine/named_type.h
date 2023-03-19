@@ -23,25 +23,36 @@
 #pragma once
 
 #include <compare>
+#include <concepts>
 #include <type_traits>
 
 namespace workshop {
 
 // named_type
-template<typename T, typename Tag>
+template<std::movable T, typename Tag>
 class named_type {
   T value_;
 
 public:
   using value_type = T;
 
-  named_type() = default;
-  constexpr explicit named_type(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>) : value_(value) {}
+  named_type()
+    requires std::default_initializable<T>
+  = default;
+  constexpr explicit named_type(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+    requires std::copyable<T>
+      : value_(value)
+  {
+  }
   constexpr explicit named_type(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>) : value_(std::move(value))
   {
   }
 
-  constexpr explicit(false) operator T() const& noexcept(std::is_nothrow_copy_constructible_v<T>) { return value_; }
+  constexpr explicit(false) operator T() const& noexcept(std::is_nothrow_copy_constructible_v<T>)
+    requires std::copyable<T>
+  {
+    return value_;
+  }
   constexpr explicit(false) operator T() && noexcept(std::is_nothrow_move_constructible_v<T>)
   {
     return std::move(value_);
@@ -52,7 +63,12 @@ public:
   constexpr T&& value() && noexcept { return std::move(value_); }
   constexpr const T&& value() const&& noexcept { return std::move(value_); }
 
-  auto operator<=>(const named_type&) const = default;
+  bool operator==(const named_type&) const
+    requires std::equality_comparable<T>
+  = default;
+  auto operator<=>(const named_type&) const
+    requires std::three_way_comparable<T>
+  = default;
 };
 
 }  // namespace workshop
