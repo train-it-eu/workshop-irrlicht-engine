@@ -26,7 +26,6 @@
  */
 
 #include <irrlicht-engine/engine.h>
-#include <cassert>
 #include <stdexcept>
 #include <string>
 
@@ -125,15 +124,6 @@ irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_run
 workshop::object_handle::object_handle(engine& e, type t, const std::string& name) :
     resource_(&init_object_handle(e.runtime(), t, name, e.irrlicht_media_path()))
 {
-}
-
-void workshop::object_handle::rotation(float x, float y, float z)
-{
-  assert(-180 <= x && x <= 180);
-  assert(-180 <= y && y <= 180);
-  assert(-180 <= z && z <= 180);
-
-  resource_->setRotation(irr::core::vector3df(x, y, z));
 }
 
 /* ********************************* C A M E R A ********************************* */

@@ -22,30 +22,44 @@
 
 #pragma once
 
+#include <gsl/gsl-lite.hpp>
 #include <compare>
 #include <concepts>
 #include <type_traits>
 #include <utility>
 
-namespace workshop {
+inline constexpr struct validated_tag {
+} validated;
 
-// named_type
-template<std::movable T, typename Tag>
-class named_type {
+template<std::movable T, std::predicate<T> Validator>
+class validated_type {
   T value_;
-
 public:
   using value_type = T;
 
-  named_type()
-    requires std::default_initializable<T>
-  = default;
-  constexpr explicit named_type(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+  static constexpr bool validate(const T& value) { return Validator()(value); }
+
+  constexpr explicit validated_type(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+    requires std::copyable<T>
+      : value_(value)
+  {
+    gsl_Expects(validate(value_));
+  }
+
+  constexpr explicit validated_type(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>) :
+      value_(std::move(value))
+  {
+    gsl_Expects(validate(value_));
+  }
+
+  constexpr validated_type(const T& value, validated_tag) noexcept(std::is_nothrow_copy_constructible_v<T>)
     requires std::copyable<T>
       : value_(value)
   {
   }
-  constexpr explicit named_type(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>) : value_(std::move(value))
+
+  constexpr validated_type(T&& value, validated_tag) noexcept(std::is_nothrow_move_constructible_v<T>) :
+      value_(std::move(value))
   {
   }
 
@@ -54,22 +68,21 @@ public:
   {
     return value_;
   }
+
   constexpr explicit(false) operator T() && noexcept(std::is_nothrow_move_constructible_v<T>)
   {
     return std::move(value_);
   }
 
-  constexpr T& value() & noexcept { return value_; }
+  constexpr T& value() & noexcept = delete;
   constexpr const T& value() const& noexcept { return value_; }
   constexpr T&& value() && noexcept { return std::move(value_); }
   constexpr const T&& value() const&& noexcept { return std::move(value_); }
 
-  bool operator==(const named_type&) const
+  bool operator==(const validated_type&) const
     requires std::equality_comparable<T>
   = default;
-  auto operator<=>(const named_type&) const
+  auto operator<=>(const validated_type&) const
     requires std::three_way_comparable<T>
   = default;
 };
-
-}  // namespace workshop

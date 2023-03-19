@@ -26,6 +26,7 @@
 
 #include <gsl/gsl-lite.hpp>
 #include <irrlicht-engine/named_type.h>
+#include <irrlicht-engine/ranged_value.h>
 #include <irrlicht-engine/utils.h>
 #include <nonstd/observer_ptr.hpp>
 #include <irrlicht.h>
@@ -40,6 +41,8 @@ namespace workshop {
 
 template<std::derived_from<irr::IReferenceCounted> T>
 using droppable_res_ptr = std::unique_ptr<T, decltype([](auto* ptr) { ptr->drop(); })>;
+
+using angle = ranged_value<float, -180, 180>;
 
 // forward declarations
 class object_handle;
@@ -85,7 +88,7 @@ public:
   explicit object_handle(irr::scene::IAnimatedMeshSceneNode& resource) : resource_(&resource) {}
 
   void position(float x, float y, float z) { resource_->setPosition(irr::core::vector3df(x, y, z)); }
-  void rotation(float x, float y, float z);
+  void rotation(angle x, angle y, angle z) { resource_->setRotation(irr::core::vector3df(x, y, z)); }
   void selector(selector& s) { resource_->setTriangleSelector(s.resource_.get()); }
   void highlight(bool select) { resource_->setMaterialFlag(irr::video::EMF_LIGHTING, !select); }
   std::string name() const { return resource_->getName(); }
