@@ -65,6 +65,7 @@ class Engine3dConan(ConanFile):
             transitive_headers=True,
             transitive_libs=True,
         )
+        self.requires("observer-ptr-lite/0.4.0", transitive_headers=True)
 
     def validate(self):
         check_min_cppstd(self, 20)

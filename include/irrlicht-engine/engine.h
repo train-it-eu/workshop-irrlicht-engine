@@ -23,9 +23,17 @@
 #pragma once
 
 #include <irrlicht-engine/utils.h>
+#include <nonstd/observer_ptr.hpp>
 #include <irrlicht.h>
+#include <filesystem>
+#include <memory>
+#include <optional>
+#include <type_traits>
 
 namespace workshop {
+
+template<typename T>
+using droppable_res_ptr = std::unique_ptr<T, decltype([](auto* ptr) { ptr->drop(); })>;
 
 // forward declarations
 class object_handle;
@@ -41,12 +49,11 @@ class engine;
  */
 class selector : type_counters<selector> {
 public:
-  explicit selector(engine* e, object_handle* object);
-  ~selector();
+  explicit selector(engine& e, object_handle& object);
 
 private:
   friend object_handle;
-  irr::scene::ITriangleSelector* resource_ = nullptr;  /// Irrlicht resource
+  droppable_res_ptr<irr::scene::ITriangleSelector> resource_;  /// Irrlicht resource
 };
 
 /**
@@ -64,25 +71,29 @@ public:
   /**
    * Adds new character to workshop::engine
    */
-  explicit object_handle(engine* e, type t, const std::string* name);
+  explicit object_handle(engine& e, type t, const std::string& name);
 
   /**
    * Creates a reference to already existing Irrlicht node
    */
-  explicit object_handle(irr::scene::IAnimatedMeshSceneNode* resource);
+  explicit object_handle(irr::scene::IAnimatedMeshSceneNode& resource) : resource_(&resource) {}
 
   void position(float x, float y, float z);
   void rotation(float x, float y, float z);
-  void selector(selector* s);
+  void selector(selector& s);
   void highlight(bool select);
-  void name(std::string* name) const;
+  std::string name() const;
   bool operator==(const object_handle& rhs) const = default;
 
 private:
   friend engine;
   friend workshop::selector;
-  irr::scene::IAnimatedMeshSceneNode* resource_ = nullptr;  /// Irrlicht resource
+  nonstd::observer_ptr<irr::scene::IAnimatedMeshSceneNode> resource_;  /// Irrlicht resource
 };
+
+// Copyable
+static_assert(std::is_copy_constructible_v<object_handle>);
+static_assert(std::is_copy_assignable_v<object_handle>);
 
 /**
  * @brief Irrlicht camera object wrapper
@@ -94,13 +105,13 @@ private:
  */
 class camera : type_counters<camera> {
 public:
-  void position(float x, float y, float z);
-  void target(float x, float y, float z);
+  void position(float x, float y, float z) { resource_.setPosition(irr::core::vector3df(x, y, z)); }
+  void target(float x, float y, float z) { resource_.setTarget(irr::core::vector3df(x, y, z)); }
 
 private:
   friend engine;
-  irr::scene::ICameraSceneNode* resource_;  /// Irrlicht resource
-  explicit camera(irr::scene::ISceneManager* smgr, irr::scene::IMeshSceneNode* level);
+  irr::scene::ICameraSceneNode& resource_;  /// Irrlicht resource
+  explicit camera(irr::scene::ISceneManager& smgr, irr::scene::IMeshSceneNode& level);
 };
 
 /**
@@ -114,9 +125,9 @@ private:
 class engine : type_counters<engine> {
 public:
   struct irr_runtime {
-    irr::video::IVideoDriver* driver;   /// Irrlicht driver interface handler
-    irr::scene::ISceneManager* smgr;    /// Irrlicht scene interface handler
-    irr::gui::IGUIEnvironment* guienv;  /// Irrlicht GUI interface handler
+    irr::video::IVideoDriver& driver;   /// Irrlicht driver interface handler
+    irr::scene::ISceneManager& smgr;    /// Irrlicht scene interface handler
+    irr::gui::IGUIEnvironment& guienv;  /// Irrlicht GUI interface handler
   };
 
   enum class device_type {
@@ -144,21 +155,20 @@ public:
    * Constructor
    *
    * @param irrlicht_media_path  Path to media directory of an Irrlicht library
-   * @param width          Window/Screen width
-   * @param height         Window/Screen height
-   * @param bpp            Bits per pixel valid only in full screen mode (16 or 32)
-   * @param full_screen    Enables full screen mode
-   * @param stencil        Enables usage of stencil buffer for shadows
-   * @param vsync          Enables vertical sync
-   * @param type           Type of the device to use or default
+   * @param width                Window/Screen width
+   * @param height               Window/Screen height
+   * @param bpp                  Bits per pixel valid only in full screen mode (16 or 32)
+   * @param full_screen          Enables full screen mode
+   * @param stencil              Enables usage of stencil buffer for shadows
+   * @param vsync                Enables vertical sync
+   * @param type                 Type of the device to use or default
    */
-  explicit engine(const std::string& irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp,
-                  bool full_screen, bool stencil, bool vsync, device_type* type);
-  ~engine();
+  explicit engine(std::filesystem::path irrlicht_media_path, irr::u32 width, irr::u32 height, irr::u32 bpp,
+                  bool full_screen, bool stencil, bool vsync, device_type type = device_type::software);
 
-  const std::string& irrlicht_media_path() const { return irrlicht_media_path_; }
-  workshop::camera* camera() { return camera_; }
-  object_handle* selected_object() const { return selected_object_; }
+  const std::filesystem::path& irrlicht_media_path() const { return irrlicht_media_path_; }
+  workshop::camera& camera() { return camera_; }
+  const std::optional<object_handle>& selected_object() const { return selected_object_; }
 
   void draw_label(const std::string& label);
 
@@ -182,18 +192,18 @@ private:
   friend object_handle;
   friend selector;
 
-  const std::string irrlicht_media_path_;  /// ath to media directory of the Irrlicht library
-  event_receiver event_receiver_;          /// event receiver
+  const std::filesystem::path irrlicht_media_path_;  /// path to media directory of the Irrlicht library
+  event_receiver event_receiver_;                    /// event receiver
 
-  irr::IrrlichtDevice* device_{};             /// Irrlicht device - the most important object of the engine
-  irr_runtime runtime_{};                     /// Irrlicht runtime
-  irr::gui::IGUIFont* font_{};                /// Irrlicht font resource to use
-  irr::scene::IBillboardSceneNode* laser_{};  /// Irrlicht resource used for laser
+  droppable_res_ptr<irr::IrrlichtDevice> device_;  /// Irrlicht device - the most important object of the engine
+  irr_runtime runtime_;                            /// Irrlicht runtime
+  irr::gui::IGUIFont& font_;                       /// Irrlicht font resource to use
+  irr::scene::IBillboardSceneNode& laser_;         /// Irrlicht resource used for laser
 
-  workshop::camera* camera_{};        /// engine camera
-  object_handle* selected_object_{};  /// selected object found by collision detection algorithm
+  workshop::camera camera_;                       /// engine camera
+  std::optional<object_handle> selected_object_;  /// selected object found by collision detection algorithm
 
-  irr_runtime* runtime() { return &runtime_; }
+  irr_runtime& runtime() { return runtime_; }
   void process_collisions();
   bool run();
   bool window_active();
