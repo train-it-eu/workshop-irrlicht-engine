@@ -40,34 +40,36 @@ public:
   named_type()
     requires std::default_initializable<T>
   = default;
+
   constexpr explicit named_type(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
     requires std::copyable<T>
       : value_(value)
   {
   }
+
   constexpr explicit named_type(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>) : value_(std::move(value))
   {
   }
 
-  constexpr explicit(false) operator T() const& noexcept(std::is_nothrow_copy_constructible_v<T>)
+  [[nodiscard]] constexpr explicit(false) operator T() const& noexcept(std::is_nothrow_copy_constructible_v<T>)
     requires std::copyable<T>
   {
     return value_;
   }
-  constexpr explicit(false) operator T() && noexcept(std::is_nothrow_move_constructible_v<T>)
+  [[nodiscard]] constexpr explicit(false) operator T() && noexcept(std::is_nothrow_move_constructible_v<T>)
   {
     return std::move(value_);
   }
 
-  constexpr T& value() & noexcept { return value_; }
-  constexpr const T& value() const& noexcept { return value_; }
-  constexpr T&& value() && noexcept { return std::move(value_); }
-  constexpr const T&& value() const&& noexcept { return std::move(value_); }
+  [[nodiscard]] constexpr T& value() & noexcept { return value_; }
+  [[nodiscard]] constexpr const T& value() const& noexcept { return value_; }
+  [[nodiscard]] constexpr T&& value() && noexcept { return std::move(value_); }
+  [[nodiscard]] constexpr const T&& value() const&& noexcept { return std::move(value_); }
 
-  bool operator==(const named_type&) const
+  [[nodiscard]] bool operator==(const named_type&) const
     requires std::equality_comparable<T>
   = default;
-  auto operator<=>(const named_type&) const
+  [[nodiscard]] auto operator<=>(const named_type&) const
     requires std::three_way_comparable<T>
   = default;
 };

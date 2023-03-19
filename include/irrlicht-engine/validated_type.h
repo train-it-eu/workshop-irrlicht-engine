@@ -69,20 +69,20 @@ public:
     return value_;
   }
 
-  constexpr explicit(false) operator T() && noexcept(std::is_nothrow_move_constructible_v<T>)
+  [[nodiscard]] constexpr explicit(false) operator T() && noexcept(std::is_nothrow_move_constructible_v<T>)
   {
     return std::move(value_);
   }
 
   constexpr T& value() & noexcept = delete;
-  constexpr const T& value() const& noexcept { return value_; }
-  constexpr T&& value() && noexcept { return std::move(value_); }
-  constexpr const T&& value() const&& noexcept { return std::move(value_); }
+  [[nodiscard]] constexpr const T& value() const& noexcept { return value_; }
+  [[nodiscard]] constexpr T&& value() && noexcept { return std::move(value_); }
+  [[nodiscard]] constexpr const T&& value() const&& noexcept { return std::move(value_); }
 
-  bool operator==(const validated_type&) const
+  [[nodiscard]] bool operator==(const validated_type&) const
     requires std::equality_comparable<T>
   = default;
-  auto operator<=>(const validated_type&) const
+  [[nodiscard]] auto operator<=>(const validated_type&) const
     requires std::three_way_comparable<T>
   = default;
 };

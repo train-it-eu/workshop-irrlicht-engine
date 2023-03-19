@@ -48,9 +48,10 @@ workshop::selector::selector(engine& e, object_handle& object) :
 
 namespace {
 
-irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_runtime& r,
-                                                       workshop::object_handle::type type, const std::string& name,
-                                                       const std::filesystem::path& irrlicht_media_path)
+[[nodiscard]] irr::scene::IAnimatedMeshSceneNode& init_object_handle(workshop::engine::irr_runtime& r,
+                                                                     workshop::object_handle::type type,
+                                                                     const std::string& name,
+                                                                     const std::filesystem::path& irrlicht_media_path)
 {
   using ptr_type = gsl::not_null<nonstd::observer_ptr<irr::scene::IAnimatedMeshSceneNode>>;
   using enum workshop::object_handle::type;
@@ -168,7 +169,7 @@ bool workshop::engine::event_receiver::OnEvent(const irr::SEvent& event)
 
 namespace {
 
-irr::video::E_DRIVER_TYPE convert(workshop::engine::device_type type)
+[[nodiscard]] irr::video::E_DRIVER_TYPE convert(workshop::engine::device_type type)
 {
   constexpr irr::video::E_DRIVER_TYPE irr_type[] = {irr::video::EDT_NULL, irr::video::EDT_SOFTWARE,
                                                     irr::video::EDT_DIRECT3D9, irr::video::EDT_OPENGL};
@@ -177,7 +178,7 @@ irr::video::E_DRIVER_TYPE convert(workshop::engine::device_type type)
   return irr_type[static_cast<int>(type)];
 }
 
-gsl::not_null<workshop::droppable_res_ptr<irr::IrrlichtDevice>> init_device(
+[[nodiscard]] gsl::not_null<workshop::droppable_res_ptr<irr::IrrlichtDevice>> init_device(
   const std::filesystem::path& irrlicht_media_path,
   const std::variant<workshop::window_params, workshop::full_screen_params>& screen_params,
   workshop::stencil_buffer stencil, workshop::vertical_sync vsync, workshop::engine::device_type device_type,
@@ -215,7 +216,8 @@ gsl::not_null<workshop::droppable_res_ptr<irr::IrrlichtDevice>> init_device(
   return device;
 }
 
-irr::gui::IGUIFont& init_font(irr::gui::IGUIEnvironment& guienv, const std::filesystem::path& irrlicht_media_path)
+[[nodiscard]] irr::gui::IGUIFont& init_font(irr::gui::IGUIEnvironment& guienv,
+                                            const std::filesystem::path& irrlicht_media_path)
 {
   const auto path = irrlicht_media_path / "fonthaettenschweiler.bmp";
   nonstd::observer_ptr<irr::gui::IGUIFont> font(guienv.getFont(path.c_str()));
@@ -223,8 +225,9 @@ irr::gui::IGUIFont& init_font(irr::gui::IGUIEnvironment& guienv, const std::file
   return *font;
 }
 
-irr::scene::IBillboardSceneNode& init_laser(irr::scene::ISceneManager& smgr, irr::video::IVideoDriver& driver,
-                                            const std::filesystem::path& irrlicht_media_path)
+[[nodiscard]] irr::scene::IBillboardSceneNode& init_laser(irr::scene::ISceneManager& smgr,
+                                                          irr::video::IVideoDriver& driver,
+                                                          const std::filesystem::path& irrlicht_media_path)
 {
   // add the laser
   nonstd::observer_ptr<irr::scene::IBillboardSceneNode> laser(smgr.addBillboardSceneNode());
@@ -245,7 +248,7 @@ irr::scene::IBillboardSceneNode& init_laser(irr::scene::ISceneManager& smgr, irr
   return *laser;
 }
 
-irr::scene::IMeshSceneNode& add_level(irr::scene::ISceneManager& smgr)
+[[nodiscard]] irr::scene::IMeshSceneNode& add_level(irr::scene::ISceneManager& smgr)
 {
   // get mesh
   nonstd::observer_ptr<irr::scene::IAnimatedMesh> q3_level_mesh(smgr.getMesh("20kdm2.bsp"));
